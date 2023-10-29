@@ -1,0 +1,46 @@
+[
+  {"type":"directory","name":".","contents":[
+    {"type":"directory","name":"audio","contents":[
+      {"type":"directory","name":"train","contents":[
+        {"type":"directory","name":"strong_label_real"},
+        {"type":"directory","name":"unlabel_in_domain"},
+        {"type":"directory","name":"weak"}
+    ]},
+      {"type":"directory","name":"validation","contents":[
+        {"type":"directory","name":"validation"}
+    ]}
+  ]},
+    {"type":"directory","name":"dcase_synth","contents":[
+      {"type":"directory","name":"audio","contents":[
+        {"type":"directory","name":"train","contents":[
+          {"type":"directory","name":"synthetic21_train","contents":[
+            {"type":"directory","name":"soundscapes"}
+        ]}
+      ]},
+        {"type":"directory","name":"validation","contents":[
+          {"type":"directory","name":"synthetic21_validation","contents":[
+            {"type":"directory","name":"soundscapes"}
+        ]}
+      ]}
+    ]},
+      {"type":"directory","name":"metadata","contents":[
+        {"type":"directory","name":"train","contents":[
+          {"type":"directory","name":"synthetic21_train"}
+      ]},
+        {"type":"directory","name":"validation","contents":[
+          {"type":"directory","name":"synthetic21_validation"}
+      ]}
+    ]}
+  ]},
+    {"type":"directory","name":"metadata","contents":[
+      {"type":"directory","name":"train","contents":[
+        {"type":"directory","name":"synthetic21_train"}
+    ]},
+      {"type":"directory","name":"validation","contents":[
+        {"type":"directory","name":"synthetic21_validation"}
+    ]}
+  ]}
+  ]}
+,
+  {"type":"report","directories":25}
+]

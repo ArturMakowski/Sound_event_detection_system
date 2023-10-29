@@ -1,0 +1,246 @@
+.
+├── PSDS_Eval
+│   ├── PSDS_Evaluation.ipynb
+│   ├── PSDS_Experiment.ipynb
+│   ├── img
+│   │   └── Metrics.png
+│   └── meta
+│       ├── metrics_test
+│       │   ├── student
+│       │   │   ├── event_f1.txt
+│       │   │   ├── predictions0.5.csv
+│       │   │   ├── predictions_operating_points
+│       │   │   │   ├── predictions_th_0.01.tsv
+│       │   │   │   ├── predictions_th_0.03.tsv
+│       │   │   │   ├── predictions_th_0.05.tsv
+│       │   │   │   ├── predictions_th_0.07.tsv
+│       │   │   │   ├── predictions_th_0.09.tsv
+│       │   │   │   ├── predictions_th_0.11.tsv
+│       │   │   │   ├── predictions_th_0.13.tsv
+│       │   │   │   ├── predictions_th_0.15.tsv
+│       │   │   │   ├── predictions_th_0.17.tsv
+│       │   │   │   ├── predictions_th_0.19.tsv
+│       │   │   │   ├── predictions_th_0.21.tsv
+│       │   │   │   ├── predictions_th_0.23.tsv
+│       │   │   │   ├── predictions_th_0.25.tsv
+│       │   │   │   ├── predictions_th_0.27.tsv
+│       │   │   │   ├── predictions_th_0.29.tsv
+│       │   │   │   ├── predictions_th_0.31.tsv
+│       │   │   │   ├── predictions_th_0.33.tsv
+│       │   │   │   ├── predictions_th_0.35.tsv
+│       │   │   │   ├── predictions_th_0.37.tsv
+│       │   │   │   ├── predictions_th_0.39.tsv
+│       │   │   │   ├── predictions_th_0.41.tsv
+│       │   │   │   ├── predictions_th_0.43.tsv
+│       │   │   │   ├── predictions_th_0.45.tsv
+│       │   │   │   ├── predictions_th_0.47.tsv
+│       │   │   │   ├── predictions_th_0.49.tsv
+│       │   │   │   ├── predictions_th_0.51.tsv
+│       │   │   │   ├── predictions_th_0.53.tsv
+│       │   │   │   ├── predictions_th_0.55.tsv
+│       │   │   │   ├── predictions_th_0.57.tsv
+│       │   │   │   ├── predictions_th_0.59.tsv
+│       │   │   │   ├── predictions_th_0.61.tsv
+│       │   │   │   ├── predictions_th_0.63.tsv
+│       │   │   │   ├── predictions_th_0.65.tsv
+│       │   │   │   ├── predictions_th_0.67.tsv
+│       │   │   │   ├── predictions_th_0.69.tsv
+│       │   │   │   ├── predictions_th_0.71.tsv
+│       │   │   │   ├── predictions_th_0.73.tsv
+│       │   │   │   ├── predictions_th_0.75.tsv
+│       │   │   │   ├── predictions_th_0.77.tsv
+│       │   │   │   ├── predictions_th_0.79.tsv
+│       │   │   │   ├── predictions_th_0.81.tsv
+│       │   │   │   ├── predictions_th_0.83.tsv
+│       │   │   │   ├── predictions_th_0.85.tsv
+│       │   │   │   ├── predictions_th_0.87.tsv
+│       │   │   │   ├── predictions_th_0.89.tsv
+│       │   │   │   ├── predictions_th_0.91.tsv
+│       │   │   │   ├── predictions_th_0.93.tsv
+│       │   │   │   ├── predictions_th_0.95.tsv
+│       │   │   │   ├── predictions_th_0.97.tsv
+│       │   │   │   └── predictions_th_0.99.tsv
+│       │   │   └── segment_f1.txt
+│       │   └── teacher
+│       │       ├── event_f1.txt
+│       │       ├── predictions0.5.csv
+│       │       ├── predictions_operating_points
+│       │       │   ├── predictions_th_0.01.tsv
+│       │       │   ├── predictions_th_0.03.tsv
+│       │       │   ├── predictions_th_0.05.tsv
+│       │       │   ├── predictions_th_0.07.tsv
+│       │       │   ├── predictions_th_0.09.tsv
+│       │       │   ├── predictions_th_0.11.tsv
+│       │       │   ├── predictions_th_0.13.tsv
+│       │       │   ├── predictions_th_0.15.tsv
+│       │       │   ├── predictions_th_0.17.tsv
+│       │       │   ├── predictions_th_0.19.tsv
+│       │       │   ├── predictions_th_0.21.tsv
+│       │       │   ├── predictions_th_0.23.tsv
+│       │       │   ├── predictions_th_0.25.tsv
+│       │       │   ├── predictions_th_0.27.tsv
+│       │       │   ├── predictions_th_0.29.tsv
+│       │       │   ├── predictions_th_0.31.tsv
+│       │       │   ├── predictions_th_0.33.tsv
+│       │       │   ├── predictions_th_0.35.tsv
+│       │       │   ├── predictions_th_0.37.tsv
+│       │       │   ├── predictions_th_0.39.tsv
+│       │       │   ├── predictions_th_0.41.tsv
+│       │       │   ├── predictions_th_0.43.tsv
+│       │       │   ├── predictions_th_0.45.tsv
+│       │       │   ├── predictions_th_0.47.tsv
+│       │       │   ├── predictions_th_0.49.tsv
+│       │       │   ├── predictions_th_0.51.tsv
+│       │       │   ├── predictions_th_0.53.tsv
+│       │       │   ├── predictions_th_0.55.tsv
+│       │       │   ├── predictions_th_0.57.tsv
+│       │       │   ├── predictions_th_0.59.tsv
+│       │       │   ├── predictions_th_0.61.tsv
+│       │       │   ├── predictions_th_0.63.tsv
+│       │       │   ├── predictions_th_0.65.tsv
+│       │       │   ├── predictions_th_0.67.tsv
+│       │       │   ├── predictions_th_0.69.tsv
+│       │       │   ├── predictions_th_0.71.tsv
+│       │       │   ├── predictions_th_0.73.tsv
+│       │       │   ├── predictions_th_0.75.tsv
+│       │       │   ├── predictions_th_0.77.tsv
+│       │       │   ├── predictions_th_0.79.tsv
+│       │       │   ├── predictions_th_0.81.tsv
+│       │       │   ├── predictions_th_0.83.tsv
+│       │       │   ├── predictions_th_0.85.tsv
+│       │       │   ├── predictions_th_0.87.tsv
+│       │       │   ├── predictions_th_0.89.tsv
+│       │       │   ├── predictions_th_0.91.tsv
+│       │       │   ├── predictions_th_0.93.tsv
+│       │       │   ├── predictions_th_0.95.tsv
+│       │       │   ├── predictions_th_0.97.tsv
+│       │       │   └── predictions_th_0.99.tsv
+│       │       └── segment_f1.txt
+│       ├── validation.tsv
+│       └── validation_durations.tsv
+├── README.md
+├── _master_thesis
+│   ├── tree.json
+│   ├── tree.txt
+│   └── w_dir_tree.txt
+├── build
+│   ├── bdist.linux-x86_64
+│   └── lib
+│       └── desed_task
+│           └── data_augm.py
+├── data
+│   └── README.md
+├── desed_task
+│   ├── README.md
+│   ├── data_augm.py
+│   ├── dataio
+│   │   ├── __init__.py
+│   │   ├── datasets.py
+│   │   └── sampler.py
+│   ├── evaluation
+│   │   ├── __init__.py
+│   │   └── evaluation_measures.py
+│   ├── nnet
+│   │   ├── CNN.py
+│   │   ├── CRNN.py
+│   │   ├── RNN.py
+│   │   └── __init__.py
+│   └── utils
+│       ├── __init__.py
+│       ├── download.py
+│       ├── encoder.py
+│       ├── scaler.py
+│       ├── schedulers.py
+│       └── torch_utils.py
+├── desed_task.egg-info
+│   ├── PKG-INFO
+│   ├── SOURCES.txt
+│   ├── dependency_links.txt
+│   ├── requires.txt
+│   └── top_level.txt
+├── dist
+│   └── desed_task-0.1.1-py3.8.egg
+├── lint-requirements.txt
+├── recipes
+│   ├── dcase2021_task4_baseline
+│   │   ├── README.md
+│   │   ├── conda_create_environment.sh
+│   │   ├── confs
+│   │   │   ├── sed.yaml
+│   │   │   ├── sed_dataset.yaml
+│   │   │   └── sep+sed.yaml
+│   │   ├── finetune_on_separated.py
+│   │   ├── generate_dcase_subset.py
+│   │   ├── generate_dcase_task4_2021.py
+│   │   ├── generate_dcase_task4_2022.py
+│   │   ├── local
+│   │   │   ├── apply_separation_model.py
+│   │   │   ├── classes_dict.py
+│   │   │   ├── resample_folder.py
+│   │   │   ├── sed_trainer.py
+│   │   │   ├── sepsed_trainer.py
+│   │   │   └── utils.py
+│   │   ├── requirements.txt
+│   │   ├── run_separation.py
+│   │   ├── tmp
+│   │   └── train_sed.py
+│   ├── dcase2022_task4_baseline
+│   │   ├── README.md
+│   │   ├── conda_create_environment.sh
+│   │   ├── confs
+│   │   │   ├── default.yaml
+│   │   │   └── pretrained.yaml
+│   │   ├── extract_embeddings.py
+│   │   ├── generate_dcase_task4_2022.py
+│   │   ├── img
+│   │   │   └── mean_teacher.png
+│   │   ├── local
+│   │   │   ├── ast
+│   │   │   │   ├── __init__.py
+│   │   │   │   └── ast_models.py
+│   │   │   ├── classes_dict.py
+│   │   │   ├── panns
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── models.py
+│   │   │   │   └── pytorch_utils.py
+│   │   │   ├── resample_folder.py
+│   │   │   ├── sed_trainer.py
+│   │   │   ├── sed_trainer_pretrained.py
+│   │   │   └── utils.py
+│   │   ├── requirements.txt
+│   │   ├── train_pretrained.py
+│   │   └── train_sed.py
+│   └── dcase2023_task4_baseline
+│       ├── README.md
+│       ├── conda_create_environment.sh
+│       ├── confs
+│       │   ├── default.yaml
+│       │   └── pretrained.yaml
+│       ├── extract_embeddings.py
+│       ├── generate_dcase_task4_2023.py
+│       ├── img
+│       │   └── mean_teacher.png
+│       ├── local
+│       │   ├── beats
+│       │   │   ├── BEATs.py
+│       │   │   ├── Tokenizers.py
+│       │   │   ├── __init__.py
+│       │   │   ├── backbone.py
+│       │   │   ├── modules.py
+│       │   │   └── quantizer.py
+│       │   ├── classes_dict.py
+│       │   ├── resample_folder.py
+│       │   ├── sed_trainer.py
+│       │   ├── sed_trainer_pretrained.py
+│       │   └── utils.py
+│       ├── missing_files
+│       │   ├── missing_files_strong_label_real.tsv
+│       │   ├── missing_files_unlabel_in_domain.tsv
+│       │   ├── missing_files_validation.tsv
+│       │   └── missing_files_weak.tsv
+│       ├── requirements.txt
+│       ├── train_pretrained.py
+│       └── train_sed.py
+└── setup.py
+
+38 directories, 205 files
