@@ -20,7 +20,7 @@ from trainer import SED
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
-# from dvclive.lightning import DVCLiveLogger
+from dvclive.lightning import DVCLiveLogger
 
 from utils import classes_labels
 
@@ -133,6 +133,7 @@ def single_run(
         logger = TensorBoardLogger(
             os.path.dirname(config["log_dir"]), config["log_dir"].split("/")[-1],
         )
+        dvclive_logger = DVCLiveLogger(save_dvc_exp=True)
         logger.log_hyperparams(config)
         print(f"experiment dir: {logger.log_dir}")
 
@@ -208,7 +209,7 @@ def single_run(
         devices=devices,
         strategy=config["training"].get("backend"),
         accumulate_grad_batches=config["training"]["accumulate_batches"],
-        logger=logger,
+        logger=[logger, dvclive_logger],
         gradient_clip_val=config["training"]["gradient_clip"],
         check_val_every_n_epoch=config["training"]["validation_interval"],
         num_sanity_val_steps=0,

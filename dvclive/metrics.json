@@ -1,0 +1,28 @@
+{
+    "train": {
+        "loss_strong": 0.5888862013816833,
+        "step": 6.0,
+        "lr": 6.747659881511936e-06
+    },
+    "epoch": 3,
+    "step": 6,
+    "val": {
+        "synth": {
+            "loss_strong": 0.5897284746170044,
+            "psds1_sed_scores_eval": 0.0,
+            "intersection_f1_macro": 0.013732543771455386,
+            "event_f1_macro": 0.00037789324414916337
+        },
+        "obj_metric": 0.013732543771455386
+    },
+    "test": {
+        "loss_strong": 0.5865660309791565,
+        "psds1_psds_eval": 0.0009002875958567035,
+        "psds1_sed_scores_eval": 0.0,
+        "psds2_psds_eval": 0.012636248486206168,
+        "psds2_sed_scores_eval": 0.0,
+        "event_f1_macro": 0.00010351966921007261,
+        "intersection_f1_macro": 0.010189669087974172
+    },
+    "hp_metric": 0.012636248486206168
+}
