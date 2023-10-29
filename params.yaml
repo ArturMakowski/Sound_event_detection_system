@@ -78,3 +78,4 @@ net:
   pooling: [ [ 1, 2 ], [ 1, 2 ], [ 1, 2 ], [ 1, 2 ], [ 1, 2 ], [ 1, 2 ], [ 1, 2 ] ]
   dropout_recurrent: 0
   use_embeddings: False
+# log_dir: ./exp/ # path to save checkpoints

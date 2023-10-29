@@ -130,6 +130,8 @@ class SED(pl.LightningModule):
         if self._exp_dir is None:
             try:
                 self._exp_dir = self.logger.log_dir
+                if self._exp_dir is None:
+                    self._exp_dir = self.hparams["log_dir"]
             except Exception as e:
                 self._exp_dir = self.hparams["log_dir"]
         return self._exp_dir
@@ -225,18 +227,18 @@ class SED(pl.LightningModule):
             )
 
         # sed  forward
-        strong_preds = self.sed(self.scaler(self.take_log(features)))
+        preds = self.sed(self.scaler(self.take_log(features)))
 
         # supervised loss on strong labels
-        loss_strong = self.supervised_loss(
-            strong_preds, labels
+        loss = self.supervised_loss(
+            preds, labels
         )
 
-        self.log("train/loss_strong", loss_strong, prog_bar=True, sync_dist=True)
+        self.log("train/loss", loss, prog_bar=True, sync_dist=True)
         self.log("train/step", self.scheduler["scheduler"].step_num, prog_bar=True, sync_dist=True)
         self.log("train/lr", self.opt.param_groups[-1]["lr"], prog_bar=True, sync_dist=True)
 
-        return loss_strong
+        return loss
 
     def validation_step(self, batch, batch_indx):
         """ Apply validation to a batch (step). Used during trainer.fit
@@ -254,14 +256,14 @@ class SED(pl.LightningModule):
         features = self.mel_spec(audio)
         batch_num = features.shape[0]
 
-        strong_preds = self.sed(self.scaler(self.take_log(features)))
-        # strong_preds = strong_preds.reshape(batch_num, -1, strong_preds.shape[-1]) # reshape to (batch, classes, frames)
+        preds = self.sed(self.scaler(self.take_log(features)))
+        # preds = preds.reshape(batch_num, -1, preds.shape[-1]) # reshape to (batch, classes, frames)
 
-        loss_strong = self.supervised_loss(
-            strong_preds, labels
+        loss = self.supervised_loss(
+            preds, labels
         )
 
-        self.log("val/synth/loss_strong", loss_strong)
+        self.log("val/synth/loss", loss)
 
         filenames_synth = [
             x
@@ -273,7 +275,7 @@ class SED(pl.LightningModule):
             scores_raw_strong, scores_postprocessed_strong,
             decoded_strong,
         ) = batched_decode_preds(
-            strong_preds,
+            preds,
             filenames_synth,
             self.encoder,
             median_filter=self.hparams["training"]["median_window"],
@@ -391,19 +393,19 @@ class SED(pl.LightningModule):
         # prediction for 
         features = self.mel_spec(audio)
         
-        strong_preds = self.sed(self.scaler(self.take_log(features)))
+        preds = self.sed(self.scaler(self.take_log(features)))
         
         if not self.evaluation:
-            loss_strong = self.supervised_loss(strong_preds, labels)
+            loss = self.supervised_loss(preds, labels)
 
-            self.log("test/loss_strong", loss_strong)
+            self.log("test/loss", loss)
             
         # compute psds
         (
             scores_raw_strong, scores_postprocessed_strong,
             decoded_strong,
         ) = batched_decode_preds(
-            strong_preds,
+            preds,
             filenames,
             self.encoder,
             median_filter=self.hparams["training"]["median_window"],

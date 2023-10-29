@@ -130,10 +130,12 @@ def single_run(
             "scheduler": ExponentialWarmup(opt, config["opt"]["lr"], exp_steps),
             "interval": "step",
         }
-        logger = TensorBoardLogger(
-            os.path.dirname(config["log_dir"]), config["log_dir"].split("/")[-1],
-        )
-        dvclive_logger = DVCLiveLogger(save_dvc_exp=True)
+        # logger = TensorBoardLogger(
+        #     os.path.dirname(config["log_dir"]), config["log_dir"].split("/")[-1],
+        # )
+        # dvclive_logger = DVCLiveLogger(save_dvc_exp=True)
+        logger = DVCLiveLogger(save_dvc_exp=True)
+
         logger.log_hyperparams(config)
         print(f"experiment dir: {logger.log_dir}")
 
@@ -209,7 +211,7 @@ def single_run(
         devices=devices,
         strategy=config["training"].get("backend"),
         accumulate_grad_batches=config["training"]["accumulate_batches"],
-        logger=[logger, dvclive_logger],
+        logger=logger,
         gradient_clip_val=config["training"]["gradient_clip"],
         check_val_every_n_epoch=config["training"]["validation_interval"],
         num_sanity_val_steps=0,
@@ -239,7 +241,7 @@ def prepare_run(argv=None):
     )
     parser.add_argument(
         "--log_dir",
-        default="./exp/2023_baseline",
+        default="./exp/2023_baseline/",
         help="Directory where to save tensorboard logs, saved models, etc.",
     )
     parser.add_argument(
