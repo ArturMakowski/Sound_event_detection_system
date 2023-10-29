@@ -241,7 +241,7 @@ def prepare_run(argv=None):
     )
     parser.add_argument(
         "--log_dir",
-        default="./exp/2023_baseline/",
+        default="./exp/",
         help="Directory where to save tensorboard logs, saved models, etc.",
     )
     parser.add_argument(

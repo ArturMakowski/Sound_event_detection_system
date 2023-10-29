@@ -5,7 +5,3 @@ plots:
     x: step
 params:
 - dvclive/params.yaml
-artifacts:
-  best:
-    path: dvclive/artifacts/epoch=1-step=4-v1.ckpt
-    type: model

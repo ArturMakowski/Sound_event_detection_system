@@ -3,7 +3,7 @@ training:
   batch_size_val: 24
   n_epochs_warmup: 50
   num_workers: 8
-  n_epochs: 4
+  n_epochs: 10
   early_stop_patience: 2
   accumulate_batches: 1
   gradient_clip: 0.0
@@ -125,4 +125,4 @@ net:
     - 2
   dropout_recurrent: 0
   use_embeddings: false
-log_dir: ./exp/2023_baseline/
+log_dir: ./exp/
