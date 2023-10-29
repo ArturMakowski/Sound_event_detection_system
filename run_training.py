@@ -25,9 +25,10 @@ def single_run(
     log_dir,
     gpus,
     real_data=False,
+    callbacks=None,
     checkpoint_resume=None,
-    test_state_dict=None,
     fast_dev_run=False,
+    test_state_dict=None,
     evaluation=False
 ):
     """
