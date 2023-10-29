@@ -134,7 +134,7 @@ class SED(pl.LightningModule):
                 self._exp_dir = self.hparams["log_dir"]
         return self._exp_dir
 
-    def lr_scheduler_step(self, scheduler):
+    def lr_scheduler_step(self, scheduler, optimizer_idx, metric):
         scheduler.step()
         
     def _init_scaler(self):
@@ -203,7 +203,7 @@ class SED(pl.LightningModule):
         amp_to_db.amin = 1e-5  # amin= 1e-5 as in librosa
         return amp_to_db(mels).clamp(min=-50, max=80) 
 
-    def training_step(self, batch):
+    def training_step(self, batch, batch_indx):
         
         """ Apply the training for one batch (a step). Used during trainer.fit
 
@@ -238,7 +238,7 @@ class SED(pl.LightningModule):
 
         return loss
 
-    def validation_step(self, batch):
+    def validation_step(self, batch, batch_indx):
         """ Apply validation to a batch (step). Used during trainer.fit
 
         Args:
@@ -372,7 +372,7 @@ class SED(pl.LightningModule):
         checkpoint["sed"] = self.sed.state_dict()
         return checkpoint
 
-    def test_step(self, batch):
+    def test_step(self, batch, batch_indx):
         
         """ Apply Test to a batch (step), used only when (trainer.test is called)
 

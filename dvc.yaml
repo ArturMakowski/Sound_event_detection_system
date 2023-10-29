@@ -1,7 +1,11 @@
+params:
+- dvclive/params.yaml
 metrics:
 - dvclive/metrics.json
 plots:
 - dvclive/plots/metrics:
     x: step
-params:
-- dvclive/params.yaml
+artifacts:
+  best:
+    path: dvclive/artifacts/epoch=1-step=4-v2.ckpt
+    type: model
