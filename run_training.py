@@ -11,7 +11,6 @@ import yaml
 
 from desed_task.dataio import ConcatDatasetBatchSampler
 from desed_task.dataio.datasets import StronglyAnnotatedSet, UnlabeledSet, WeakSet
-# from desed_task.nnet.CRNN import CRNN
 from model import CRNN
 from encoder import ManyHotEncoder
 from desed_task.utils.schedulers import ExponentialWarmup
