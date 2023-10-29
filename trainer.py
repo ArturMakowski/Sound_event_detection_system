@@ -1,8 +1,6 @@
 import os
 import random
-from copy import deepcopy
 from pathlib import Path
-import warnings
 import yaml
 
 import pandas as pd
@@ -14,7 +12,6 @@ from desed_task.data_augm import mixup
 from desed_task.utils.scaler import TorchScaler
 from desed_task.utils.encoder import ManyHotEncoder
 import numpy as np
-import torchmetrics
 
 from utils import (
     batched_decode_preds,
@@ -33,6 +30,7 @@ from model import CRNN
 
 
 class SED(pl.LightningModule):
+    
     """ Pytorch lightning module for the SED task.
     Args:
         hparams: dict, the dictionary to be used for the current experiment.
@@ -45,8 +43,8 @@ class SED(pl.LightningModule):
         train_sampler: torch.utils.data.Sampler subclass object, the sampler to be used in the training dataloader.
         scheduler: BaseScheduler subclass object, the scheduler to be used.
                    This is used to apply ramp-up during training for example.
-        fast_dev_run: bool, whether to launch a run with only one batch for each set, this is for development purpose,
-            to test the code runs.
+        fast_dev_run: bool, whether to launch a run with only one batch for each set, this is for development purpose, 
+                   to test the code runs.
     """
 
     def __init__(
@@ -98,12 +96,12 @@ class SED(pl.LightningModule):
             center=False
         )
 
-        # instantiating losses
-        self.supervised_loss = torch.nn.BCELoss()
+        #* instantiating loss fn and scaler
+        self.loss_fn = torch.nn.BCELoss()
 
         self.scaler = self._init_scaler()
         
-        # buffer for event based scores which we compute using sed-eval
+        #* buffer for event based scores which we compute using sed-eval
         self.val_buffer_synth = {
             k: pd.DataFrame() for k in self.hparams["training"]["val_thresholds"]
         }
@@ -136,10 +134,11 @@ class SED(pl.LightningModule):
                 self._exp_dir = self.hparams["log_dir"]
         return self._exp_dir
 
-    def lr_scheduler_step(self, scheduler, optimizer_idx, metric):
+    def lr_scheduler_step(self, scheduler):
         scheduler.step()
         
     def _init_scaler(self):
+        
         """ Scaler inizialization function. It can be either a dataset or instance scaler.
 
         Raises:
@@ -155,10 +154,8 @@ class SED(pl.LightningModule):
                 self.hparams["scaler"]["normtype"],
                 self.hparams["scaler"]["dims"],
             )
-
             return scaler
         elif self.hparams["scaler"]["statistic"] == "dataset":
-            # we fit the scaler
             scaler = TorchScaler(
                 "dataset",
                 self.hparams["scaler"]["normtype"],
@@ -193,6 +190,7 @@ class SED(pl.LightningModule):
             return scaler
 
     def take_log(self, mels):
+        
         """ Apply the log transformation to mel spectrograms.
         Args:
             mels: torch.Tensor, mel spectrograms for which to apply log.
@@ -205,7 +203,8 @@ class SED(pl.LightningModule):
         amp_to_db.amin = 1e-5  # amin= 1e-5 as in librosa
         return amp_to_db(mels).clamp(min=-50, max=80) 
 
-    def training_step(self, batch, batch_indx):
+    def training_step(self, batch):
+        
         """ Apply the training for one batch (a step). Used during trainer.fit
 
         Args:
@@ -216,9 +215,8 @@ class SED(pl.LightningModule):
            torch.Tensor, the loss to take into account.
         """
 
-        audio, labels, padded_indxs = batch
+        audio, labels, _ = batch
         features = self.mel_spec(audio)
-        batch_num = features.shape[0]
 
         mixup_type = self.hparams["training"].get("mixup")
         if mixup_type is not None and 0.5 > random.random():
@@ -226,11 +224,11 @@ class SED(pl.LightningModule):
                 features, labels, mixup_label_type=mixup_type
             )
 
-        # sed  forward
+        # sed forward
         preds = self.sed(self.scaler(self.take_log(features)))
 
-        # supervised loss on strong labels
-        loss = self.supervised_loss(
+        # loss on strong labels
+        loss = self.loss_fn(
             preds, labels
         )
 
@@ -240,7 +238,7 @@ class SED(pl.LightningModule):
 
         return loss
 
-    def validation_step(self, batch, batch_indx):
+    def validation_step(self, batch):
         """ Apply validation to a batch (step). Used during trainer.fit
 
         Args:
@@ -249,17 +247,12 @@ class SED(pl.LightningModule):
         Returns:
         """
 
-        audio, labels, padded_indxs, filenames = batch
+        audio, labels, _, filenames = batch
 
-
-        # prediction for 
         features = self.mel_spec(audio)
-        batch_num = features.shape[0]
-
         preds = self.sed(self.scaler(self.take_log(features)))
-        # preds = preds.reshape(batch_num, -1, preds.shape[-1]) # reshape to (batch, classes, frames)
 
-        loss = self.supervised_loss(
+        loss = self.loss_fn(
             preds, labels
         )
 
@@ -300,7 +293,7 @@ class SED(pl.LightningModule):
             torch.Tensor, the objective metric to be used to choose the best model from for example.
         """
 
-        # synth dataset
+        #* synth val dataset
         ground_truth = sed_scores_eval.io.read_ground_truth_events(self.hparams["data"]["synth_val_tsv"])
         audio_durations = sed_scores_eval.io.read_audio_durations(self.hparams["data"]["synth_val_dur"])
         if self.fast_dev_run:
@@ -313,7 +306,7 @@ class SED(pl.LightningModule):
                 for audio_id in self.val_scores_postprocessed_buffer_synth
             }
         else:
-            # drop audios without events
+            #* drop audios without events
             ground_truth = {
                 audio_id: gt for audio_id, gt in ground_truth.items()
                 if len(gt) > 0
@@ -366,7 +359,7 @@ class SED(pl.LightningModule):
         )
         self.log("val/synth/event_f1_macro", synth_event_macro, sync_dist=True)
 
-        # free the buffers
+        #* free the buffers
         self.val_buffer_synth = {
             k: pd.DataFrame() for k in self.hparams["training"]["val_thresholds"]
         }
@@ -379,7 +372,8 @@ class SED(pl.LightningModule):
         checkpoint["sed"] = self.sed.state_dict()
         return checkpoint
 
-    def test_step(self, batch, batch_indx):
+    def test_step(self, batch):
+        
         """ Apply Test to a batch (step), used only when (trainer.test is called)
 
         Args:
@@ -388,19 +382,17 @@ class SED(pl.LightningModule):
         Returns:
         """
         
-        audio, labels, padded_indxs, filenames = batch        
+        audio, labels, _, filenames = batch        
         
-        # prediction for 
         features = self.mel_spec(audio)
-        
         preds = self.sed(self.scaler(self.take_log(features)))
         
         if not self.evaluation:
-            loss = self.supervised_loss(preds, labels)
+            loss = self.loss_fn(preds, labels)
 
             self.log("test/loss", loss)
             
-        # compute psds
+        #* compute psds (Polyphonic Sound Detection Score)
         (
             scores_raw_strong, scores_postprocessed_strong,
             decoded_strong,
@@ -419,16 +411,14 @@ class SED(pl.LightningModule):
         for th in self.test_psds_buffer.keys():
             self.test_psds_buffer[th] = pd.concat([self.test_psds_buffer[th], decoded_strong[th]], ignore_index=True)
 
-
-        # compute f1 score
         self.decoded_05_buffer = pd.concat([self.decoded_05_buffer, decoded_strong[0.5]])
 
     def on_test_epoch_end(self):
-        # pub eval dataset
+        
         save_dir = os.path.join(self.exp_dir, "metrics_test")
 
+        #* if evaluation is True, we only save the scores
         if self.evaluation:
-            # only save prediction scores
             save_dir_raw = os.path.join(save_dir, "_scores", "raw")
             sed_scores_eval.io.write_sed_scores(self.test_scores_raw_buffer, save_dir_raw)
             print(f"\nRaw scores for  saved in: {save_dir_raw}")
@@ -437,7 +427,7 @@ class SED(pl.LightningModule):
             sed_scores_eval.io.write_sed_scores(self.test_scores_postprocessed_buffer, save_dir_postprocessed)
             print(f"\nPostprocessed scores for  saved in: {save_dir_postprocessed}")
         else:
-            # calculate the metrics
+            #* calculate the metrics and save them
             ground_truth = sed_scores_eval.io.read_ground_truth_events(self.hparams["data"]["test_tsv"])
             audio_durations = sed_scores_eval.io.read_audio_durations(self.hparams["data"]["test_dur"])
             if self.fast_dev_run:
@@ -517,7 +507,6 @@ class SED(pl.LightningModule):
                 self.hparams["data"]["test_dur"],
             )
 
-
             best_test_result = torch.tensor(max(psds1_psds_eval, psds2_psds_eval))
 
             results = {
@@ -546,10 +535,8 @@ class SED(pl.LightningModule):
         self.train_loader = torch.utils.data.DataLoader(
             self.train_data,
             batch_size=self.hparams["training"]["batch_size"],
-            # batch_sampler=self.train_sampler,
             num_workers=self.num_workers,
         )
-
         return self.train_loader
 
     def val_dataloader(self):

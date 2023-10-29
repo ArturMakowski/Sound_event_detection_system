@@ -1,16 +1,12 @@
 import argparse
-import warnings
 from collections import OrderedDict
 
 import numpy as np
-import os
 import pandas as pd
-import random
 import torch
 import yaml
 
-from desed_task.dataio import ConcatDatasetBatchSampler
-from desed_task.dataio.datasets import StronglyAnnotatedSet, UnlabeledSet, WeakSet
+from desed_task.dataio.datasets import StronglyAnnotatedSet, UnlabeledSet
 from model import CRNN
 from encoder import ManyHotEncoder
 from desed_task.utils.schedulers import ExponentialWarmup
@@ -19,7 +15,7 @@ from trainer import SED
 
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
-from pytorch_lightning.loggers import TensorBoardLogger
+# from pytorch_lightning.loggers import TensorBoardLogger
 from dvclive.lightning import DVCLiveLogger
 
 from utils import classes_labels
@@ -28,12 +24,11 @@ def single_run(
     config,
     log_dir,
     gpus,
-    strong_real=False,
+    real_data=False,
     checkpoint_resume=None,
     test_state_dict=None,
     fast_dev_run=False,
-    evaluation=False,
-    callbacks=None
+    evaluation=False
 ):
     """
     Running sound event detection baseline
@@ -55,7 +50,6 @@ def single_run(
     if seed:
         pl.seed_everything(seed, workers=True)
 
-    ##### data prep test ##########
     encoder = ManyHotEncoder(
         list(classes_labels.keys()),
         audio_len=config["data"]["audio_max_len"],
@@ -65,6 +59,7 @@ def single_run(
         fs=config["data"]["fs"],
     )
 
+    #####* test data prep #####
     if not evaluation:
         devtest_df = pd.read_csv(config["data"]["test_tsv"], sep="\t")
         devtest_dataset = StronglyAnnotatedSet(
@@ -84,26 +79,29 @@ def single_run(
 
     test_dataset = devtest_dataset
 
-    ##### model definition  ############
+    #####* model definition #####
     sed = CRNN(**config["net"])
 
+    #* if test_state_dict is not None, no training is involved and the model is tested
+    
     if test_state_dict is None:
-        ##### data prep train valid ##########
+        
+        #####* train, valid data prep #####
         synth_df = pd.read_csv(config["data"]["synth_tsv"], sep="\t")
         synth_set = StronglyAnnotatedSet(
             config["data"]["synth_folder"],
             synth_df,
             encoder,
-            pad_to=config["data"]["audio_max_len"],
+            pad_to=config["data"]["audio_max_len"]
         )
 
-        if strong_real:
-            strong_df = pd.read_csv(config["data"]["strong_tsv"], sep="\t")
-            strong_set = StronglyAnnotatedSet(
+        if real_data:
+            real_df = pd.read_csv(config["data"]["strong_tsv"], sep="\t")
+            real_set = StronglyAnnotatedSet(
                 config["data"]["strong_folder"],
-                strong_df,
+                real_df,
                 encoder,
-                pad_to=config["data"]["audio_max_len"],
+                pad_to=config["data"]["audio_max_len"]
             )
 
         synth_df_val = pd.read_csv(config["data"]["synth_val_tsv"], sep="\t")
@@ -115,14 +113,13 @@ def single_run(
             pad_to=config["data"]["audio_max_len"],
         )
 
-        if strong_real:
-            train_dataset = torch.utils.data.ConcatDataset([strong_set, synth_set])
+        if real_data:
+            train_dataset = torch.utils.data.ConcatDataset([real_set, synth_set])
         else:
             train_dataset = synth_set
 
-        ##### training params and optimizers ############
+        #####* training params and optimizers #####
         epoch_len = len(train_dataset) // (config["training"]["batch_size"] * config["training"]["accumulate_batches"])
-
 
         opt = torch.optim.Adam(sed.parameters(), config["opt"]["lr"], betas=(0.9, 0.999))
         exp_steps = config["training"]["n_epochs_warmup"] * epoch_len
@@ -130,11 +127,11 @@ def single_run(
             "scheduler": ExponentialWarmup(opt, config["opt"]["lr"], exp_steps),
             "interval": "step",
         }
+        
         # logger = TensorBoardLogger(
-        #     os.path.dirname(config["log_dir"]), config["log_dir"].split("/")[-1],
-        # )
-        # dvclive_logger = DVCLiveLogger(save_dvc_exp=True)
-        logger = DVCLiveLogger(save_dvc_exp=True)
+        #     os.path.dirname(config["log_dir"]), config["log_dir"].split("/")[-1])
+        
+        logger = DVCLiveLogger(save_dvc_exp=True, log_model=True)
 
         logger.log_hyperparams(config)
         print(f"experiment dir: {logger.log_dir}")
@@ -145,26 +142,27 @@ def single_run(
                 monitor="val/obj_metric",
                 patience=config["training"]["early_stop_patience"],
                 verbose=True,
-                mode="max",
+                mode="max"
             ),
             ModelCheckpoint(
                 logger.log_dir,
                 monitor="val/obj_metric",
                 save_top_k=1,
                 mode="max",
-                save_last=True,
-            ),
+                save_last=True
+            )
         ]
     else:
         train_dataset = None
         valid_dataset = None
-        batch_sampler = None
         opt = None
         exp_scheduler = None
         logger = True
         callbacks = None
 
-    desed_training = SED(
+    #####* training #####
+    
+    sed_model = SED(
         config,
         encoder=encoder,
         sed=sed,
@@ -172,22 +170,18 @@ def single_run(
         train_data=train_dataset,
         valid_data=valid_dataset,
         test_data=test_dataset,
-        # train_sampler=batch_sampler,
         scheduler=exp_scheduler,
         fast_dev_run=fast_dev_run,
         evaluation=evaluation
     )
 
-    # Not using the fast_dev_run of Trainer because creates a DummyLogger so cannot check problems with the Logger
     if fast_dev_run:
-        flush_logs_every_n_steps = 1
         log_every_n_steps = 1
         limit_train_batches = 2
         limit_val_batches = 2
         limit_test_batches = 2
         n_epochs = 3
     else:
-        flush_logs_every_n_steps = 100
         log_every_n_steps = 40
         limit_train_batches = 1.0
         limit_val_batches = 1.0
@@ -196,19 +190,17 @@ def single_run(
 
     if gpus == "0":
         accelerator = "cpu"
-        devices = 1
     elif gpus == "1":
         accelerator = "gpu"
-        devices = 1
     else:
-        raise NotImplementedError("Multiple GPUs are currently not supported")
+        raise NotImplementedError()
 
     trainer = pl.Trainer(
         precision=config["training"]["precision"],
         max_epochs=n_epochs,
         callbacks=callbacks,
         accelerator=accelerator,
-        devices=devices,
+        devices=1,
         strategy=config["training"].get("backend"),
         accumulate_grad_batches=config["training"]["accumulate_batches"],
         logger=logger,
@@ -224,52 +216,52 @@ def single_run(
     )
     if test_state_dict is None:
 
-        trainer.fit(desed_training, ckpt_path=checkpoint_resume)
+        trainer.fit(sed_model, ckpt_path=checkpoint_resume)
         best_path = trainer.checkpoint_callback.best_model_path
         print(f"best model: {best_path}")
         test_state_dict = torch.load(best_path)["state_dict"]
 
-    desed_training.load_state_dict(test_state_dict)
-    trainer.test(desed_training)
+    sed_model.load_state_dict(test_state_dict)
+    trainer.test(sed_model)
 
 def prepare_run(argv=None):
-    parser = argparse.ArgumentParser("Training a SED system for DESED Task")
+    parser = argparse.ArgumentParser("Training a SED system")
     parser.add_argument(
         "--conf_file",
         default="params.yaml",
-        help="The configuration file with all the experiment parameters.",
+        help="The configuration file with all the experiment parameters."
     )
     parser.add_argument(
         "--log_dir",
         default="./exp/",
-        help="Directory where to save tensorboard logs, saved models, etc.",
+        help="Directory where to save logs, saved models, etc."
     )
     parser.add_argument(
-        "--strong_real",
+        "--real_data",
         action="store_true",
         default=False,
-        help="The strong annotations coming from Audioset will be included in the training phase.",
+        help="The strong annotations coming from Audioset will be included in the training phase."
     )
     parser.add_argument(
         "--resume_from_checkpoint",
         default=None,
-        help="Allow the training to be resumed, take as input a previously saved model (.ckpt).",
+        help="Allow the training to be resumed, take as input a previously saved model (.ckpt)."
     )
     parser.add_argument(
-        "--test_from_checkpoint", default=None, help="Test the model specified"
+        "--test_from_checkpoint", default=None, help="Test the model specified."
     )
     parser.add_argument(
         "--gpus",
         default="0",
         help="The number of GPUs to train on, or the gpu to use, default='1', "
-        "so uses one GPU",
+        "so uses one GPU"
     )
     parser.add_argument(
         "--fast_dev_run",
         action="store_true",
         default=False,
         help="Use this option to make a 'fake' run which is useful for development and debugging. "
-        "It uses very few batches and epochs so it won't give any meaningful result.",
+        "It uses very few batches and epochs so it won't give any meaningful result."
     )
     parser.add_argument(
         "--eval_from_checkpoint",
@@ -307,15 +299,15 @@ def prepare_run(argv=None):
 
 if __name__ == "__main__":
 
-    # prepare run
+    #* prepare run
     configs, args, test_model_state_dict, evaluation = prepare_run()
     
-    # launch run
+    #* launch run
     single_run(
         configs,
         args.log_dir,
         args.gpus,
-        args.strong_real,
+        args.real_data,
         args.resume_from_checkpoint,
         test_model_state_dict,
         args.fast_dev_run,
