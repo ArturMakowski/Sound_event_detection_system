@@ -25,14 +25,15 @@ def single_run(
     log_dir,
     gpus,
     real_data=False,
-    callbacks=None,
     checkpoint_resume=None,
-    fast_dev_run=False,
     test_state_dict=None,
-    evaluation=False
+    fast_dev_run=False,
+    evaluation=False,
+    callbacks=None
 ):
+    
     """
-    Running sound event detection baseline
+    Running sound event detection training and testing.
 
     Args:
         config (dict): the dictionary of configuration params
@@ -249,7 +250,9 @@ def prepare_run(argv=None):
         help="Allow the training to be resumed, take as input a previously saved model (.ckpt)."
     )
     parser.add_argument(
-        "--test_from_checkpoint", default=None, help="Test the model specified."
+        "--test_from_checkpoint", 
+        default=None, 
+        help="Test the model specified."
     )
     parser.add_argument(
         "--gpus",
