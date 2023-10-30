@@ -4,7 +4,7 @@ from dcase_util.data import DecisionEncoder
 
 
 class ManyHotEncoder:
-    """"
+    """ "
         Adapted after DecisionEncoder.find_contiguous_regions method in
         https://github.com/DCASE-REPO/dcase_util/blob/master/dcase_util/data/decisions.py
 
@@ -36,7 +36,7 @@ class ManyHotEncoder:
         # self.n_frames = int(int((n_frames / self.frame_hop)) / self.net_pooling)
 
     def encode_weak(self, labels):
-        """ Encode a list of weak labels into a numpy array
+        """Encode a list of weak labels into a numpy array
 
         Args:
             labels: list, list of labels to encode (to a vector of 0 and 1)
@@ -59,7 +59,7 @@ class ManyHotEncoder:
                 labels = labels["event_label"]
         y = np.zeros(len(self.labels))
         for label in labels:
-            if not pd.isna(label): # type: ignore
+            if not pd.isna(label):  # type: ignore
                 i = self.labels.index(label)
                 y[i] = 1
         return y
@@ -153,7 +153,7 @@ class ManyHotEncoder:
         return y
 
     def decode_weak(self, labels):
-        """ Decode the encoded weak labels
+        """Decode the encoded weak labels
         Args:
             labels: numpy.array, the encoded labels to be decoded
 
@@ -169,7 +169,7 @@ class ManyHotEncoder:
         return result_labels
 
     def decode_strong(self, labels):
-        """ Decode the encoded strong labels
+        """Decode the encoded strong labels
         Args:
             labels: numpy.array, the encoded labels to be decoded
         Returns:

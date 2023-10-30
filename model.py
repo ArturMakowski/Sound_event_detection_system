@@ -6,6 +6,7 @@ import torch
 import torchsummary
 import torchinfo
 
+
 # ! CNN
 class CNN(nn.Module):
     def __init__(
@@ -19,11 +20,11 @@ class CNN(nn.Module):
         nb_filters=[64, 64, 64],
         pooling=[(1, 4), (1, 4), (1, 4)],
         normalization="batch",
-        **kwargs
+        **kwargs,
     ):
         """
             Initialization of CNN network s
-        
+
         Args:
             n_in_channel: int, number of input channel
             activation: str, activation function
@@ -60,7 +61,6 @@ class CNN(nn.Module):
             elif activ.lower() == "relu":
                 cnn.add_module("relu{0}".format(i), nn.ReLU())
 
-
             if dropout is not None:
                 cnn.add_module("dropout{0}".format(i), nn.Dropout(dropout))
 
@@ -87,10 +87,10 @@ class CNN(nn.Module):
         x = self.cnn(x)
         return x
 
+
 # ! RNN
 class BidirectionalGRU(nn.Module):
     def __init__(self, n_in, n_hidden, dropout=0, num_layers=1):
-
         """
             Initialization of BidirectionalGRU instance
         Args:
@@ -137,6 +137,7 @@ class BidirectionalGRU(nn.Module):
 #         output = output.view(b, T, -1)
 #         return output
 
+
 # ! CRNN
 class CRNN(nn.Module):
     def __init__(
@@ -153,7 +154,7 @@ class CRNN(nn.Module):
     ):
         """
             Initialization of CRNN model
-        
+
         Args:
             n_in_channel: int, number of input channel
             n_class: int, number of classes
@@ -166,7 +167,7 @@ class CRNN(nn.Module):
             n_layer_RNN: int, number of RNN layers
             dropout_recurrent: float, recurrent layers dropout
             cnn_integration: bool, integration of cnn
-            freeze_bn: 
+            freeze_bn:
             **kwargs: keywords arguments for CNN.
         """
         super(CRNN, self).__init__()
@@ -176,9 +177,12 @@ class CRNN(nn.Module):
         n_in_cnn = n_in_channel
 
         self.cnn = CNN(
-            n_in_channel=n_in_cnn, activation=activation, conv_dropout=int(dropout), **kwargs
+            n_in_channel=n_in_cnn,
+            activation=activation,
+            conv_dropout=int(dropout),
+            **kwargs,
         )
-        
+
         # n_in_channel,
         # activation="Relu",
         # conv_dropout=0,
@@ -204,9 +208,7 @@ class CRNN(nn.Module):
         self.dense = nn.Linear(n_RNN_cell * 2, nclass)
         self.sigmoid = nn.Sigmoid()
 
-        
     def forward(self, x, pad_mask=None, embeddings=None):
-        
         # print(f'x.shape input = {x.shape}')
         x = x.transpose(1, 2).unsqueeze(1)
         # print(f'x.transpose(1, 2).unsqueeze(1).shape = {x.shape}')
@@ -234,11 +236,15 @@ class CRNN(nn.Module):
         strong = self.sigmoid(strong)
         return strong.transpose(1, 2)
 
-                        
+
 if __name__ == "__main__":
-    
     with open("params.yaml", "r") as f:
         configs = yaml.safe_load(f)
-    
+
     model = CRNN(**configs["net"])
-    torchinfo.summary(model, (64, 128, 618), verbose=1, col_names=["input_size", "output_size", "num_params", "kernel_size"])
+    torchinfo.summary(
+        model,
+        (64, 128, 618),
+        verbose=1,
+        col_names=["input_size", "output_size", "num_params", "kernel_size"],
+    )

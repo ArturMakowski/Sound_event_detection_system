@@ -15,10 +15,12 @@ from trainer import SED
 
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
+
 # from pytorch_lightning.loggers import TensorBoardLogger
 from dvclive.lightning import DVCLiveLogger
 
 from utils import classes_labels
+
 
 def single_run(
     config,
@@ -29,9 +31,8 @@ def single_run(
     test_state_dict=None,
     fast_dev_run=False,
     evaluation=False,
-    callbacks=None
+    callbacks=None,
 ):
-    
     """
     Running sound event detection training and testing.
 
@@ -69,14 +70,11 @@ def single_run(
             devtest_df,
             encoder,
             return_filename=True,
-            pad_to=config["data"]["audio_max_len"]
+            pad_to=config["data"]["audio_max_len"],
         )
     else:
         devtest_dataset = UnlabeledSet(
-            config["data"]["eval_folder"],
-            encoder,
-            pad_to=None,
-            return_filename=True
+            config["data"]["eval_folder"], encoder, pad_to=None, return_filename=True
         )
 
     test_dataset = devtest_dataset
@@ -84,17 +82,16 @@ def single_run(
     #####* model definition #####
     sed = CRNN(**config["net"])
 
-    #* if test_state_dict is not None, no training is involved and the model is tested
-    
+    # * if test_state_dict is not None, no training is involved and the model is tested
+
     if test_state_dict is None:
-        
         #####* train, valid data prep #####
         synth_df = pd.read_csv(config["data"]["synth_tsv"], sep="\t")
         synth_set = StronglyAnnotatedSet(
             config["data"]["synth_folder"],
             synth_df,
             encoder,
-            pad_to=config["data"]["audio_max_len"]
+            pad_to=config["data"]["audio_max_len"],
         )
 
         if real_data:
@@ -103,7 +100,7 @@ def single_run(
                 config["data"]["strong_folder"],
                 real_df,
                 encoder,
-                pad_to=config["data"]["audio_max_len"]
+                pad_to=config["data"]["audio_max_len"],
             )
 
         synth_df_val = pd.read_csv(config["data"]["synth_val_tsv"], sep="\t")
@@ -121,18 +118,22 @@ def single_run(
             train_dataset = synth_set
 
         #####* training params and optimizers #####
-        epoch_len = len(train_dataset) // (config["training"]["batch_size"] * config["training"]["accumulate_batches"])
+        epoch_len = len(train_dataset) // (
+            config["training"]["batch_size"] * config["training"]["accumulate_batches"]
+        )
 
-        opt = torch.optim.Adam(sed.parameters(), config["opt"]["lr"], betas=(0.9, 0.999))
+        opt = torch.optim.Adam(
+            sed.parameters(), config["opt"]["lr"], betas=(0.9, 0.999)
+        )
         exp_steps = config["training"]["n_epochs_warmup"] * epoch_len
         exp_scheduler = {
             "scheduler": ExponentialWarmup(opt, config["opt"]["lr"], exp_steps),
             "interval": "step",
         }
-        
+
         # logger = TensorBoardLogger(
         #     os.path.dirname(config["log_dir"]), config["log_dir"].split("/")[-1])
-        
+
         logger = DVCLiveLogger(save_dvc_exp=True, log_model=True)
 
         logger.log_hyperparams(config)
@@ -140,20 +141,20 @@ def single_run(
 
         if callbacks is None:
             callbacks = [
-            EarlyStopping(
-                monitor="val/obj_metric",
-                patience=config["training"]["early_stop_patience"],
-                verbose=True,
-                mode="max"
-            ),
-            ModelCheckpoint(
-                logger.log_dir,
-                monitor="val/obj_metric",
-                save_top_k=1,
-                mode="max",
-                save_last=True
-            )
-        ]
+                EarlyStopping(
+                    monitor="val/obj_metric",
+                    patience=config["training"]["early_stop_patience"],
+                    verbose=True,
+                    mode="max",
+                ),
+                ModelCheckpoint(
+                    logger.log_dir,
+                    monitor="val/obj_metric",
+                    save_top_k=1,
+                    mode="max",
+                    save_last=True,
+                ),
+            ]
     else:
         train_dataset = None
         valid_dataset = None
@@ -163,7 +164,7 @@ def single_run(
         callbacks = None
 
     #####* training #####
-    
+
     sed_model = SED(
         config,
         encoder=encoder,
@@ -174,7 +175,7 @@ def single_run(
         test_data=test_dataset,
         scheduler=exp_scheduler,
         fast_dev_run=fast_dev_run,
-        evaluation=evaluation
+        evaluation=evaluation,
     )
 
     if fast_dev_run:
@@ -217,7 +218,6 @@ def single_run(
         enable_progress_bar=config["training"]["enable_progress_bar"],
     )
     if test_state_dict is None:
-
         trainer.fit(sed_model, ckpt_path=checkpoint_resume)
         best_path = trainer.checkpoint_callback.best_model_path
         print(f"best model: {best_path}")
@@ -226,51 +226,48 @@ def single_run(
     sed_model.load_state_dict(test_state_dict)
     trainer.test(sed_model)
 
+
 def prepare_run(argv=None):
     parser = argparse.ArgumentParser("Training a SED system")
     parser.add_argument(
         "--conf_file",
         default="params.yaml",
-        help="The configuration file with all the experiment parameters."
+        help="The configuration file with all the experiment parameters.",
     )
     parser.add_argument(
         "--log_dir",
         default="./exp/",
-        help="Directory where to save logs, saved models, etc."
+        help="Directory where to save logs, saved models, etc.",
     )
     parser.add_argument(
         "--real_data",
         action="store_true",
         default=False,
-        help="The strong annotations coming from Audioset will be included in the training phase."
+        help="The strong annotations coming from Audioset will be included in the training phase.",
     )
     parser.add_argument(
         "--resume_from_checkpoint",
         default=None,
-        help="Allow the training to be resumed, take as input a previously saved model (.ckpt)."
+        help="Allow the training to be resumed, take as input a previously saved model (.ckpt).",
     )
     parser.add_argument(
-        "--test_from_checkpoint", 
-        default=None, 
-        help="Test the model specified."
+        "--test_from_checkpoint", default=None, help="Test the model specified."
     )
     parser.add_argument(
         "--gpus",
         default="0",
         help="The number of GPUs to train on, or the gpu to use, default='1', "
-        "so uses one GPU"
+        "so uses one GPU",
     )
     parser.add_argument(
         "--fast_dev_run",
         action="store_true",
         default=False,
         help="Use this option to make a 'fake' run which is useful for development and debugging. "
-        "It uses very few batches and epochs so it won't give any meaningful result."
+        "It uses very few batches and epochs so it won't give any meaningful result.",
     )
     parser.add_argument(
-        "--eval_from_checkpoint",
-        default=None,
-        help="Evaluate the model specified"
+        "--eval_from_checkpoint", default=None, help="Evaluate the model specified"
     )
 
     args = parser.parse_args(argv)
@@ -278,13 +275,13 @@ def prepare_run(argv=None):
     with open(args.conf_file, "r") as f:
         configs = yaml.safe_load(f)
 
-    evaluation = False 
+    evaluation = False
     test_from_checkpoint = args.test_from_checkpoint
 
     if args.eval_from_checkpoint is not None:
         test_from_checkpoint = args.eval_from_checkpoint
         evaluation = True
-    
+
     test_model_state_dict = None
     if test_from_checkpoint is not None:
         checkpoint = torch.load(test_from_checkpoint)
@@ -301,12 +298,12 @@ def prepare_run(argv=None):
 
     return configs, args, test_model_state_dict, evaluation
 
-if __name__ == "__main__":
 
-    #* prepare run
+if __name__ == "__main__":
+    # * prepare run
     configs, args, test_model_state_dict, evaluation = prepare_run()
-    
-    #* launch run
+
+    # * launch run
     single_run(
         configs,
         args.log_dir,
@@ -315,5 +312,5 @@ if __name__ == "__main__":
         args.resume_from_checkpoint,
         test_model_state_dict,
         args.fast_dev_run,
-        evaluation
+        evaluation,
     )
