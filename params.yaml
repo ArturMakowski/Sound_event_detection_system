@@ -4,7 +4,7 @@ training:
   batch_size_val: 24
   n_epochs_warmup: 50 # num epochs used for exponential warmup
   num_workers: 8 # change according to your cpu
-  n_epochs: 10 # max num epochs
+  n_epochs: 20 # max num epochs
   early_stop_patience: 2 # Same as number of epochs by default, so no early stopping used
   accumulate_batches: 1
   gradient_clip: 0. # 0 no gradient clipping

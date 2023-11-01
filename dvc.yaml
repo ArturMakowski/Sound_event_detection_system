@@ -5,13 +5,12 @@ metrics:
 plots:
 - dvclive/plots/metrics:
     x: step
-artifacts:
-  best:
-    path: dvclive/artifacts/epoch=1-step=2500.ckpt
-    type: model
-# Type dvc-help in this file and hit enter to get more information on how the extension can help to setup pipelines
 stages:
   train:
     cmd: python run_training.py
     deps:
-      - run_training.py
+    - run_training.py
+artifacts:
+  best:
+    path: dvclive/artifacts/epoch=4-step=6250.ckpt
+    type: model
