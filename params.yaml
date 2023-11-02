@@ -1,11 +1,11 @@
 training:
   #batch size: [synth, weak, unlabel]
-  batch_size: 8
+  batch_size: 12
   batch_size_val: 24
   n_epochs_warmup: 50 # num epochs used for exponential warmup
   num_workers: 8 # change according to your cpu
-  n_epochs: 20 # max num epochs
-  early_stop_patience: 2 # Same as number of epochs by default, so no early stopping used
+  n_epochs: 30 # max num epochs
+  early_stop_patience: 20 # Same as number of epochs by default, so no early stopping used
   accumulate_batches: 1
   gradient_clip: 0. # 0 no gradient clipping
   median_window: 7 # length of median filter used to smooth prediction in inference (nb of output frames)

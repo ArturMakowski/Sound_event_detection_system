@@ -3,12 +3,12 @@ params:
 metrics:
 - dvclive/metrics.json
 plots:
-- dvclive/plots/metrics:
-    x: step
 - ./exp/metrics_test/scenario1/PSDS_dtc0.7_gtc0.7_cttc0.3_ct0_st1_max100_psds_eval.png
 - ./exp/metrics_test/scenario1/PSDS_dtc0.7_gtc0.7_cttcNone_ct0_st1_max100_sed_scores_eval.png
 - ./exp/metrics_test/scenario2/PSDS_dtc0.1_gtc0.1_cttc0.3_ct0.5_st1_max100_psds_eval.png
 - ./exp/metrics_test/scenario2/PSDS_dtc0.1_gtc0.1_cttc0.3_ct0.5_st1_max100_sed_scores_eval.png
+- dvclive/plots/metrics:
+    x: step
 stages:
   train:
     cmd: python run_training.py
@@ -16,5 +16,5 @@ stages:
     - run_training.py
 artifacts:
   best:
-    path: dvclive/artifacts/epoch=4-step=6250.ckpt
+    path: dvclive/artifacts/epoch=27-step=23352.ckpt
     type: model
