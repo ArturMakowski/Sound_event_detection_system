@@ -10,7 +10,7 @@ from torchaudio.transforms import AmplitudeToDB, MelSpectrogram
 
 from desed_task.data_augm import mixup
 from desed_task.utils.scaler import TorchScaler
-from desed_task.utils.encoder import ManyHotEncoder
+from encoder import ManyHotEncoder
 import numpy as np
 
 from utils import (
