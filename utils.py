@@ -11,7 +11,6 @@ import json
 
 import soundfile
 import glob
-from thop import profile, clever_format
 
 from sed_scores_eval.utils.scores import create_score_dataframe
 
