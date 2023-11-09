@@ -1,6 +1,6 @@
 __pycache__/
 .vscode/
-exp/
+# exp/
 lightning_logs/
 .dvc/
 .ruff_cache/

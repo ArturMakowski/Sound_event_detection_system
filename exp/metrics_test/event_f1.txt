@@ -1,0 +1,48 @@
+Event based metrics (onset-offset)
+========================================
+  Evaluated length                  : 10459.12 sec
+  Evaluated files                   : 1168 
+  Evaluate onset                    : True 
+  Evaluate offset                   : True 
+  T collar                          : 200.00 ms
+  Offset (length)                   : 20.00 %
+
+  Overall metrics (micro-average)
+  ======================================
+  F-measure
+    F-measure (F1)                  : 0.04 %
+    Precision                       : 0.27 %
+    Recall                          : 0.02 %
+  Error rate
+    Error rate (ER)                 : 1.09 
+    Substitution rate               : 0.00 
+    Deletion rate                   : 1.00 
+    Insertion rate                  : 0.09 
+
+  Class-wise average metrics (macro-average)
+  ======================================
+  F-measure
+    F-measure (F1)                  : 0.01 %
+    Precision                       : 0.06 %
+    Recall                          : 0.01 %
+  Error rate
+    Error rate (ER)                 : 1.14 
+    Deletion rate                   : 1.00 
+    Insertion rate                  : 0.14 
+  
+
+  Class-wise metrics
+  ======================================
+    Event label  | Nref    Nsys  | F        Pre      Rec    | ER       Del      Ins    |
+    ------------ | -----   ----- | ------   ------   ------ | ------   ------   ------ |
+    Electric_s.. | 65      9     | 0.0%     0.0%     0.0%   | 1.14     1.00     0.14   |
+    Dishes       | 559     68    | 0.0%     0.0%     0.0%   | 1.12     1.00     0.12   |
+    Frying       | 94      86    | 0.0%     0.0%     0.0%   | 1.91     1.00     0.91   |
+    Alarm_bell.. | 420     10    | 0.0%     0.0%     0.0%   | 1.02     1.00     0.02   |
+    Cat          | 341     8     | 0.0%     0.0%     0.0%   | 1.02     1.00     0.02   |
+    Vacuum_cle.. | 92      0     | 0.0%     0.0%     0.0%   | 1.00     1.00     0.00   |
+    Dog          | 570     0     | 0.0%     0.0%     0.0%   | 1.00     1.00     0.00   |
+    Speech       | 1752    180   | 0.1%     0.6%     0.1%   | 1.10     1.00     0.10   |
+    Blender      | 94      1     | 0.0%     0.0%     0.0%   | 1.01     1.00     0.01   |
+    Running_wa.. | 237     5     | 0.0%     0.0%     0.0%   | 1.02     1.00     0.02   |
+
