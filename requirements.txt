@@ -7,7 +7,6 @@ scipy==1.10.1
 sed_scores_eval==0.0.0
 sed-eval==0.2.1
 psds-eval==0.5.3
-PyAudio==0.2.13
 soundfile==0.12.1
 torch==1.13.1
 torchaudio==0.13.1
