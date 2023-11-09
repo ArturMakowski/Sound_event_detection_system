@@ -6,7 +6,6 @@ import torchaudio
 import random
 import torch
 import glob
-import h5py
 from pathlib import Path
 
 def to_mono(mixture, random_ch=False):
@@ -89,8 +88,6 @@ class StronglyAnnotatedSet(Dataset):
         random_channel=False,
         multisrc=False,
         feats_pipeline=None,
-        embeddings_hdf5_file=None,
-        embedding_type=None
 
     ):
 
@@ -101,9 +98,6 @@ class StronglyAnnotatedSet(Dataset):
         self.random_channel = random_channel
         self.multisrc = multisrc
         self.feats_pipeline = feats_pipeline
-        self.embeddings_hdf5_file = embeddings_hdf5_file
-        self.embedding_type = embedding_type
-        assert embedding_type in ["global", "frame", None], "embedding type are either frame or global or None, got {}".format(embedding_type)
 
         tsv_entries = tsv_entries.dropna()
 
@@ -136,23 +130,10 @@ class StronglyAnnotatedSet(Dataset):
         self.examples = examples
         self.examples_list = list(examples.keys())
 
-        if self.embeddings_hdf5_file is not None:
-            assert self.embedding_type is not None, "If you use embeddings you need to specify also the type (global or frame)"
-            # fetch dict of positions for each example
-            self.ex2emb_idx = {}
-            f = h5py.File(self.embeddings_hdf5_file, "r")
-            for i, fname in enumerate(f["filenames"]):
-                self.ex2emb_idx[fname.decode('UTF-8')] = i
-        self._opened_hdf5 = None
 
     def __len__(self):
         return len(self.examples_list)
 
-    @property
-    def hdf5_file(self):
-        if self._opened_hdf5  is None:
-            self._opened_hdf5 = h5py.File(self.embeddings_hdf5_file, "r")
-        return self._opened_hdf5
 
     def __getitem__(self, item):
 
@@ -185,22 +166,6 @@ class StronglyAnnotatedSet(Dataset):
         if self.return_filename:
             out_args.append(c_ex["mixture"])
 
-        if self.embeddings_hdf5_file is not None:
-            
-            name = Path(c_ex["mixture"]).stem      
-            index = self.ex2emb_idx[name]
-
-            global_embeddings = torch.from_numpy(self.hdf5_file["global_embeddings"][index]).float() # type: ignore
-            frame_embeddings = torch.from_numpy(np.stack(self.hdf5_file["frame_embeddings"][index])).float() # type: ignore
-            if self.embedding_type == "global":
-                embeddings = torch.from_numpy(self.hdf5_file["global_embeddings"][index]).float()
-            elif self.embedding_type == "frame":
-                embeddings = torch.from_numpy(np.stack(self.hdf5_file["frame_embeddings"][index])).float()
-            else:
-                raise NotImplementedError
-
-            out_args.append(embeddings)
-
         return out_args
 
 
@@ -217,8 +182,6 @@ class WeakSet(Dataset):
         random_channel=False,
         multisrc=False,
         feats_pipeline=None,
-        embeddings_hdf5_file=None,
-        embedding_type=None,
 
     ):
 
@@ -229,11 +192,6 @@ class WeakSet(Dataset):
         self.random_channel = random_channel
         self.multisrc = multisrc
         self.feats_pipeline = feats_pipeline
-        self.embeddings_hdf5_file = embeddings_hdf5_file
-        self.embedding_type = embedding_type
-        assert embedding_type in ["global", "frame",
-                                  None], "embedding type are either frame or global or None, got {}".format(
-            embedding_type)
 
         examples = {}
         for i, r in tsv_entries.iterrows():
@@ -247,23 +205,10 @@ class WeakSet(Dataset):
         self.examples = examples
         self.examples_list = list(examples.keys())
 
-        if self.embeddings_hdf5_file is not None:
-            assert self.embedding_type is not None, "If you use embeddings you need to specify also the type (global or frame)"
-            # fetch dict of positions for each example
-            self.ex2emb_idx = {}
-            f = h5py.File(self.embeddings_hdf5_file, "r")
-            for i, fname in enumerate(f["filenames"]):
-                self.ex2emb_idx[fname.decode('UTF-8')] = i
-        self._opened_hdf5 = None
 
     def __len__(self):
         return len(self.examples_list)
 
-    @property
-    def hdf5_file(self):
-        if self._opened_hdf5 is None:
-            self._opened_hdf5 = h5py.File(self.embeddings_hdf5_file, "r")
-        return self._opened_hdf5
 
     def __getitem__(self, item):
         file = self.examples_list[item]
@@ -291,22 +236,6 @@ class WeakSet(Dataset):
         if self.return_filename:
             out_args.append(c_ex["mixture"])
 
-        if self.embeddings_hdf5_file is not None:
-            name = Path(c_ex["mixture"]).stem
-            index = self.ex2emb_idx[name]
-
-            global_embeddings = torch.from_numpy(self.hdf5_file["global_embeddings"][index]).float() # type: ignore
-            frame_embeddings = torch.from_numpy(np.stack(self.hdf5_file["frame_embeddings"][index])).float() # type: ignore
-            if self.embedding_type == "global":
-                embeddings = torch.from_numpy(self.hdf5_file["global_embeddings"][index]).float()
-            elif self.embedding_type == "frame":
-                embeddings = torch.from_numpy(np.stack(self.hdf5_file["frame_embeddings"][index])).float()
-            else:
-                raise NotImplementedError
-
-            out_args.append(embeddings)
-
-
         return out_args
 
 
@@ -321,8 +250,6 @@ class UnlabeledSet(Dataset):
         random_channel=False,
         multisrc=False,
         feats_pipeline=None,
-        embeddings_hdf5_file=None,
-        embedding_type=None,
     ):
 
         self.encoder = encoder
@@ -333,29 +260,10 @@ class UnlabeledSet(Dataset):
         self.random_channel = random_channel
         self.multisrc = multisrc
         self.feats_pipeline = feats_pipeline
-        self.embeddings_hdf5_file = embeddings_hdf5_file
-        self.embedding_type = embedding_type
-        assert embedding_type in ["global", "frame",
-                                  None], "embedding type are either frame or global or None, got {}".format(
-            embedding_type)
 
-        if self.embeddings_hdf5_file is not None:
-            assert self.embedding_type is not None, "If you use embeddings you need to specify also the type (global or frame)"
-            # fetch dict of positions for each example
-            self.ex2emb_idx = {}
-            f = h5py.File(self.embeddings_hdf5_file, "r")
-            for i, fname in enumerate(f["filenames"]):
-                self.ex2emb_idx[fname.decode('UTF-8')] = i
-        self._opened_hdf5 = None
 
     def __len__(self):
         return len(self.examples)
-
-    @property
-    def hdf5_file(self):
-        if self._opened_hdf5 is None:
-            self._opened_hdf5 = h5py.File(self.embeddings_hdf5_file, "r")
-        return self._opened_hdf5
 
     def __getitem__(self, item):
         c_ex = self.examples[item]
@@ -373,20 +281,5 @@ class UnlabeledSet(Dataset):
 
         if self.return_filename:
             out_args.append(c_ex)
-
-        if self.embeddings_hdf5_file is not None:
-            name = Path(c_ex).stem
-            index = self.ex2emb_idx[name]
-
-            global_embeddings = torch.from_numpy(self.hdf5_file["global_embeddings"][index]).float() # type: ignore
-            frame_embeddings = torch.from_numpy(np.stack(self.hdf5_file["frame_embeddings"][index])).float() # type: ignore
-            if self.embedding_type == "global":
-                embeddings = torch.from_numpy(self.hdf5_file["global_embeddings"][index]).float()
-            elif self.embedding_type == "frame":
-                embeddings = torch.from_numpy(np.stack(self.hdf5_file["frame_embeddings"][index])).float()
-            else:
-                raise NotImplementedError
-
-            out_args.append(embeddings)
 
         return out_args
