@@ -16,5 +16,5 @@ stages:
     - run_training.py
 artifacts:
   best:
-    path: dvclive/artifacts/epoch=27-step=23352.ckpt
+    path: dvclive/artifacts/epoch=58-step=12449.ckpt
     type: model
