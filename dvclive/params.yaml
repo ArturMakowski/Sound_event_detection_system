@@ -1,10 +1,10 @@
 training:
-  batch_size: 12
+  batch_size: 64
   batch_size_val: 24
   n_epochs_warmup: 50
   num_workers: 8
-  n_epochs: 30
-  early_stop_patience: 20
+  n_epochs: 60
+  early_stop_patience: 30
   accumulate_batches: 1
   gradient_clip: 0.0
   median_window: 7
@@ -27,33 +27,36 @@ scaler:
   - 2
   savepath: ./scaler.ckpt
 data:
-  synth_folder: /mnt/d/DESED_dataset/dcase_synth/audio/train/synthetic21_train/soundscapes_16k/
-  synth_folder_44k: /mnt/d/DESED_dataset/dcase_synth/audio/train/synthetic21_train/soundscapes/
+  synth_folder: 
+    /content/drive/MyDrive/DESED_dataset/dcase_synth/audio/train/synthetic21_train/soundscapes_16k/
+  synth_folder_44k: 
+    /content/drive/MyDrive/DESED_dataset/dcase_synth/audio/train/synthetic21_train/soundscapes/
   synth_tsv: 
-    /mnt/d/DESED_dataset/dcase_synth/metadata/train/synthetic21_train/soundscapes.tsv
-  strong_folder: /mnt/d/DESED_dataset/audio/train/strong_label_real_16k/
-  strong_folder_44k: /mnt/d/DESED_dataset/audio/train/strong_label_real/
-  strong_tsv: /mnt/d/DESED_dataset/metadata/train/audioset_strong.tsv
-  weak_folder: /mnt/d/DESED_dataset/audio/train/weak_16k/
-  weak_folder_44k: /mnt/d/DESED_dataset/audio/train/weak/
-  weak_tsv: /mnt/d/DESED_dataset/metadata/train/weak.tsv
-  unlabeled_folder: /mnt/d/DESED_dataset/audio/train/unlabel_in_domain_16k/
-  unlabeled_folder_44k: /mnt/d/DESED_dataset/audio/train/unlabel_in_domain/
-  unlabeled_tsv: /mnt/d/DESED_dataset/metadata/train/unlabel_in_domain.tsv
+    /content/drive/MyDrive/DESED_dataset/dcase_synth/metadata/train/synthetic21_train/soundscapes.tsv
+  strong_folder: /content/drive/MyDrive/DESED_dataset/audio/train/strong_label_real_16k/
+  strong_folder_44k: /content/drive/MyDrive/DESED_dataset/audio/train/strong_label_real/
+  strong_tsv: /content/drive/MyDrive/DESED_dataset/metadata/train/audioset_strong.tsv
+  weak_folder: /content/drive/MyDrive/DESED_dataset/audio/train/weak_16k/
+  weak_folder_44k: /content/drive/MyDrive/DESED_dataset/audio/train/weak/
+  weak_tsv: /content/drive/MyDrive/DESED_dataset/metadata/train/weak.tsv
+  unlabeled_folder: /content/drive/MyDrive/DESED_dataset/audio/train/unlabel_in_domain_16k/
+  unlabeled_folder_44k: /content/drive/MyDrive/DESED_dataset/audio/train/unlabel_in_domain/
+  unlabeled_tsv: /content/drive/MyDrive/DESED_dataset/metadata/train/unlabel_in_domain.tsv
   synth_val_folder: 
-    /mnt/d/DESED_dataset/dcase_synth/audio/validation/synthetic21_validation/soundscapes_16k/
+    /content/drive/MyDrive/DESED_dataset/dcase_synth/audio/validation/synthetic21_validation/soundscapes_16k/
   synth_val_folder_44k: 
-    /mnt/d/DESED_dataset/dcase_synth/audio/validation/synthetic21_validation/soundscapes/
+    /content/drive/MyDrive/DESED_dataset/dcase_synth/audio/validation/synthetic21_validation/soundscapes/
   synth_val_tsv: 
-    /mnt/d/DESED_dataset/dcase_synth/metadata/validation/synthetic21_validation/soundscapes.tsv
+    /content/drive/MyDrive/DESED_dataset/dcase_synth/metadata/validation/synthetic21_validation/soundscapes.tsv
   synth_val_dur: 
-    /mnt/d/DESED_dataset/dcase_synth/metadata/validation/synthetic21_validation/durations.tsv
-  test_folder: /mnt/d/DESED_dataset/audio/validation/validation_16k/
-  test_folder_44k: /mnt/d/DESED_dataset/audio/validation/validation/
-  test_tsv: /mnt/d/DESED_dataset/metadata/validation/validation.tsv
-  test_dur: /mnt/d/DESED_dataset/metadata/validation/validation_durations.tsv
-  eval_folder: /mnt/d/DESED_dataset/audio/eval21_16k
-  eval_folder_44k: /mnt/d/DESED_dataset/audio/eval21
+    /content/drive/MyDrive/DESED_dataset/dcase_synth/metadata/validation/synthetic21_validation/durations.tsv
+  test_folder: /content/drive/MyDrive/DESED_dataset/audio/validation/validation_16k/
+  test_folder_44k: /content/drive/MyDrive/DESED_dataset/audio/validation/validation/
+  test_tsv: /content/drive/MyDrive/DESED_dataset/metadata/validation/validation.tsv
+  test_dur: 
+    /content/drive/MyDrive/DESED_dataset/metadata/validation/validation_durations.tsv
+  eval_folder: /content/drive/MyDrive/DESED_dataset/audio/eval21_16k
+  eval_folder_44k: /content/drive/MyDrive/DESED_dataset/audio/eval21
   audio_max_len: 10
   fs: 16000
   net_subsample: 1

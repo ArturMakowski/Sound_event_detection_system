@@ -284,7 +284,10 @@ def prepare_run(argv=None):
 
     test_model_state_dict = None
     if test_from_checkpoint is not None:
-        checkpoint = torch.load(test_from_checkpoint)
+        if args.gpus == "0":
+            checkpoint = torch.load(test_from_checkpoint, map_location="cpu")
+        else:
+            checkpoint = torch.load(test_from_checkpoint)
         configs_ckpt = checkpoint["hyper_parameters"]
         configs_ckpt["data"] = configs["data"]
         print(
