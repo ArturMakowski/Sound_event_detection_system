@@ -67,7 +67,6 @@ net:
   n_layer_RNN: 2
   n_in_channel: 1
   nclass: 10
-  attention: True
   n_RNN_cell: 128
   activation: Relu
   rnn_type: BGRU
@@ -77,4 +76,4 @@ net:
   nb_filters: [ 16, 32, 64, 128, 128, 128, 128 ]
   pooling: [ [ 1, 2 ], [ 1, 2 ], [ 1, 2 ], [ 1, 2 ], [ 1, 2 ], [ 1, 2 ], [ 1, 2 ] ]
   dropout_recurrent: 0
-  use_embeddings: False
+

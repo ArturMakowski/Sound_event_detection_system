@@ -23,7 +23,7 @@ class CNN(nn.Module):
         **kwargs,
     ):
         """
-            Initialization of CNN network s
+            Initialization of CNN network
 
         Args:
             n_in_channel: int, number of input channel
@@ -64,7 +64,6 @@ class CNN(nn.Module):
             if dropout is not None:
                 cnn.add_module("dropout{0}".format(i), nn.Dropout(dropout))
 
-        # 128x862x64
         for i in range(len(nb_filters)):
             conv(i, normalization=normalization, dropout=conv_dropout, activ=activation)
             cnn.add_module(
@@ -115,29 +114,6 @@ class BidirectionalGRU(nn.Module):
         return recurrent
 
 
-# class BidirectionalLSTM(nn.Module):
-#     def __init__(self, nIn, nHidden, nOut, dropout=0, num_layers=1):
-#         super(BidirectionalLSTM, self).__init__()
-#         self.rnn = nn.LSTM(
-#             nIn,
-#             nHidden // 2,
-#             bidirectional=True,
-#             batch_first=True,
-#             dropout=dropout,
-#             num_layers=num_layers,
-#         )
-#         self.embedding = nn.Linear(nHidden * 2, nOut)
-
-#     def forward(self, input_feat):
-#         recurrent, _ = self.rnn(input_feat)
-#         b, T, h = recurrent.size()
-#         t_rec = recurrent.contiguous().view(b * T, h)
-
-#         output = self.embedding(t_rec)  # [T * b, nOut]
-#         output = output.view(b, T, -1)
-#         return output
-
-
 # ! CRNN
 class CRNN(nn.Module):
     def __init__(
@@ -158,7 +134,6 @@ class CRNN(nn.Module):
         Args:
             n_in_channel: int, number of input channel
             n_class: int, number of classes
-            attention: bool, adding attention layer or not
             activation: str, activation function
             dropout: float, dropout
             train_cnn: bool, training cnn layers

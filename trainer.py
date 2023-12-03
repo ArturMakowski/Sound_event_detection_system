@@ -517,10 +517,7 @@ class SED(pl.LightningModule):
                 self.hparams["data"]["test_dur"],
             )
 
-            best_test_result = torch.tensor(max(psds1_psds_eval, psds2_psds_eval))
-
             results = {
-                "hp_metric": best_test_result,
                 "test/psds1_psds_eval": psds1_psds_eval,
                 "test/psds1_sed_scores_eval": psds1_sed_scores_eval,
                 "test/psds2_psds_eval": psds2_psds_eval,
