@@ -1,9 +1,4 @@
 onset	offset	event_label
-1.472	1.488	Electric_shaver_toothbrush
-1.664	1.68	Electric_shaver_toothbrush
-1.808	1.92	Electric_shaver_toothbrush
-1.952	2.016	Electric_shaver_toothbrush
-2.032	2.176	Electric_shaver_toothbrush
-2.224	9.856	Electric_shaver_toothbrush
-1.504	2.176	Speech
+1.92	9.808	Electric_shaver_toothbrush
+1.456	2.192	Speech
 4.064	5.104	Speech

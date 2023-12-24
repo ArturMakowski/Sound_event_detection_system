@@ -56,7 +56,6 @@ class SED(pl.LightningModule):
         train_data=None,
         valid_data=None,
         test_data=None,
-        train_sampler=None,
         scheduler=None,
         fast_dev_run=False,
         evaluation=False,
@@ -70,7 +69,6 @@ class SED(pl.LightningModule):
         self.train_data = train_data
         self.valid_data = valid_data
         self.test_data = test_data
-        self.train_sampler = train_sampler
         self.scheduler = scheduler
         self.fast_dev_run = fast_dev_run
         self.evaluation = evaluation
@@ -130,7 +128,7 @@ class SED(pl.LightningModule):
                 self._exp_dir = self.logger.log_dir
                 if self._exp_dir is None:
                     self._exp_dir = self.hparams["log_dir"]
-            except Exception as e:
+            except Exception:
                 self._exp_dir = self.hparams["log_dir"]
         return self._exp_dir
 
@@ -569,6 +567,7 @@ class SED(pl.LightningModule):
         features = features.unsqueeze(0)
         preds = self.sed(self.scaler(self.take_log(features)))
         return preds
+
 
 if __name__ == "__main__":
     with open("params.yaml", "r") as f:

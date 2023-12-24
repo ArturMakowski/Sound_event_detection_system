@@ -2,8 +2,6 @@ import warnings
 import yaml
 
 import torch.nn as nn
-import torch
-import torchsummary
 import torchinfo
 
 
