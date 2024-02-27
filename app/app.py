@@ -1,18 +1,14 @@
 import base64
 
 import sys
-from io import BytesIO
 
 import dcase_util
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import sed_vis
 import streamlit as st
 import torch
 import yaml
-from PIL import Image
-
 
 sys.path.append("../")
 from desed_task.dataio.datasets import StronglyAnnotatedSet
@@ -55,7 +51,6 @@ def inference(
     preds = batched_decode_preds(
         sed(dataset_strong[idx][0]), dataset_strong[idx][3], encoder
     )
-    # print(dataset_strong[i][3])
     preds[2][0.5][["onset", "offset", "event_label"]].to_csv(
         "preds.tsv", index=False, sep="\t"
     )
@@ -87,7 +82,6 @@ def inference(
 
     event_lists = {"reference": reference_event_list, "estimated": estimated_event_list}
 
-    # Visualize the data
     vis = sed_vis.visualization.EventListVisualizer(
         event_lists=event_lists,
         audio_signal=audio_container.data,
@@ -98,41 +92,28 @@ def inference(
     return vis, audio_container.data, audio_container.fs
 
 
-def get_image_download_link(vis):
-    """Generates a link allowing the data in a given plot to be downloaded"""
-    buffer = BytesIO()
-    vis.savefig(buffer, format="png")
-    buffer.seek(0)
-    image_png = buffer.getvalue()
-    b64 = base64.b64encode(image_png).decode()
-    return f'<a href="data:image/png;base64,{b64}" download="plot.png">Download plot as png</a>'
-
-
 def main():
     st.title("SED Visualization App")
 
     idx = st.number_input("Enter the index:", value=5)
 
     try:
-        vis, *_ = inference(idx)
+        vis, audio, fs = inference(idx)
     except IndexError:
         st.error("Invalid index. Please enter a valid index.")
         return
 
     vis.save(filename="vis.png")
 
-    # Open the image file
-    img = Image.open("vis.png")
-
-    # Convert the image to base64
     with open("vis.png", "rb") as img_file:
         b64_string = base64.b64encode(img_file.read()).decode()
 
-    # Display the image using markdown and center it
     st.markdown(
         f'<div style="display: flex; justify-content: center;"><img src="data:image/png;base64,{b64_string}"/></div>',
         unsafe_allow_html=True,
     )
+
+    st.audio(audio, format="audio/wav", start_time=0, sample_rate=fs)
 
 
 if __name__ == "__main__":
