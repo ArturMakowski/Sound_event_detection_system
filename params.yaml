@@ -47,10 +47,9 @@ data: # change with your paths if different.
   test_folder_44k: "/mnt/d/DESED_dataset/audio/validation/validation/"
   test_tsv: "/mnt/d/DESED_dataset/metadata/validation/validation.tsv"
   test_dur: "/mnt/d/DESED_dataset/metadata/validation/validation_durations.tsv"
-  # test_folder: "/mnt/d/DESED_dataset/audio/validation/validation_16k/"
-  # test_folder_44k: "/mnt/d/DESED_dataset/audio/validation/validation/"
-  # test_tsv: "/mnt/d/DESED_dataset/metadata/validation/validation.tsv"
-  # test_dur: "/mnt/d/DESED_dataset/metadata/validation/validation_durations.tsv"
+  # test_folder: "/mnt/d/DESED_dataset/audio/test/public/"
+  # test_tsv: "/mnt/d/DESED_dataset/metadata/test/public.tsv"
+  # test_dur: "/mnt/d/DESED_dataset/metadata/test/test_durations.tsv"
   eval_folder: "/mnt/d/DESED_dataset/audio/eval21_16k"
   eval_folder_44k: "/mnt/d/DESED_dataset/audio/eval21"
   audio_max_len: 10
