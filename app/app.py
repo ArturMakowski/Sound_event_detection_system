@@ -98,7 +98,9 @@ def main():
     idx = st.number_input("Enter the index:", value=5)
 
     try:
-        vis, audio, fs = inference(idx)
+        vis, audio, fs = inference(
+            idx, model_path="../dvclive/artifacts/epoch=58-step=12449.ckpt"
+        )
     except IndexError:
         st.error("Invalid index. Please enter a valid index.")
         return

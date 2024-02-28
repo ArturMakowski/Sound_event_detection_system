@@ -1,8 +1,9 @@
 onset	offset	event_label
-2.752	3.264	Dishes
-3.28	3.472	Dishes
-3.536	3.648	Dishes
-3.728	3.744	Dishes
-9.04	9.2	Dishes
-6.72	8.096	Speech
-9.024	9.888	Speech
+0.048	1.008	Speech
+1.104	2.56	Speech
+5.712	6.272	Speech
+6.288	6.304	Speech
+8.096	8.128	Speech
+8.144	8.304	Speech
+8.736	9.408	Speech
+9.744	9.824	Speech

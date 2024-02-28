@@ -1,6 +1,4 @@
 onset	offset	event_label
-2.731	3.77	Dishes
-3.975	4.568	Dishes
-6.984	8.062	Speech
-8.865	9.832	Dishes
-9.215	10.0	Speech
+0.0	1.005	Speech
+1.21	2.609	Speech
+3.443	10.0	Electric_shaver_toothbrush
