@@ -4,7 +4,7 @@ training:
   n_epochs_warmup: 50
   num_workers: 8
   n_epochs: 100
-  early_stop_patience: 20
+  early_stop_patience: 100
   accumulate_batches: 1
   gradient_clip: 0.0
   median_window: 7
@@ -42,19 +42,14 @@ data:
   unlabeled_folder: /content/drive/MyDrive/DESED_dataset/audio/train/unlabel_in_domain_16k/
   unlabeled_folder_44k: /content/drive/MyDrive/DESED_dataset/audio/train/unlabel_in_domain/
   unlabeled_tsv: /content/drive/MyDrive/DESED_dataset/metadata/train/unlabel_in_domain.tsv
-  synth_val_folder: 
-    /content/drive/MyDrive/DESED_dataset/dcase_synth/audio/validation/synthetic21_validation/soundscapes_16k/
-  synth_val_folder_44k: 
-    /content/drive/MyDrive/DESED_dataset/dcase_synth/audio/validation/synthetic21_validation/soundscapes/
-  synth_val_tsv: 
-    /content/drive/MyDrive/DESED_dataset/dcase_synth/metadata/validation/synthetic21_validation/soundscapes.tsv
+  synth_val_folder: /content/drive/MyDrive/DESED_dataset/audio/validation/validation_16k/
+  synth_val_folder_44k: /content/drive/MyDrive/DESED_dataset/audio/validation/validation/
+  synth_val_tsv: /content/drive/MyDrive/DESED_dataset/metadata/validation/validation.tsv
   synth_val_dur: 
-    /content/drive/MyDrive/DESED_dataset/dcase_synth/metadata/validation/synthetic21_validation/durations.tsv
-  test_folder: /content/drive/MyDrive/DESED_dataset/audio/validation/validation_16k/
-  test_folder_44k: /content/drive/MyDrive/DESED_dataset/audio/validation/validation/
-  test_tsv: /content/drive/MyDrive/DESED_dataset/metadata/validation/validation.tsv
-  test_dur: 
     /content/drive/MyDrive/DESED_dataset/metadata/validation/validation_durations.tsv
+  test_folder: /content/drive/MyDrive/DESED_dataset/audio/test/public/
+  test_tsv: /content/drive/MyDrive/DESED_dataset/metadata/test/public.tsv
+  test_dur: /content/drive/MyDrive/DESED_dataset/metadata/test/test_durations.tsv
   eval_folder: /content/drive/MyDrive/DESED_dataset/audio/eval21_16k
   eval_folder_44k: /content/drive/MyDrive/DESED_dataset/audio/eval21
   audio_max_len: 10

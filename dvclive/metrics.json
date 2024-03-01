@@ -1,27 +1,27 @@
 {
     "train": {
-        "loss": 0.09551562368869781,
-        "step": 9400.0,
+        "loss": 0.02465236186981201,
+        "step": 10600.0,
         "lr": 0.0010000000474974513
     },
-    "epoch": 89,
-    "step": 9434,
+    "epoch": 100,
+    "step": 10600,
     "val": {
         "synth": {
-            "loss": 0.216940239071846,
-            "psds1_sed_scores_eval": 0.3137622949110667,
-            "intersection_f1_macro": 0.551103880902932,
-            "event_f1_macro": 0.3614935874938965
+            "loss": 0.16992442309856415,
+            "psds1_sed_scores_eval": 0.2207156017733557,
+            "intersection_f1_macro": 0.4830585261836234,
+            "event_f1_macro": 0.33915963768959045
         },
-        "obj_metric": 0.551103880902932
+        "obj_metric": 0.4830585261836234
     },
     "test": {
-        "psds1_psds_eval": 0.22868332917129341,
-        "psds1_sed_scores_eval": 0.23456200421150386,
-        "psds2_psds_eval": 0.37544030678604945,
-        "psds2_sed_scores_eval": 0.38773347145339765,
-        "event_f1_macro": 0.3582327663898468,
-        "intersection_f1_macro": 0.537034788045762,
-        "loss": 0.1609324961900711
+        "psds1_psds_eval": 0.28043106098982423,
+        "psds1_sed_scores_eval": 0.29159036927042875,
+        "psds2_psds_eval": 0.42867745880290925,
+        "psds2_sed_scores_eval": 0.4548418917976658,
+        "event_f1_macro": 0.3958964943885803,
+        "intersection_f1_macro": 0.5693070446718125,
+        "loss": 0.2066488116979599
     }
 }
