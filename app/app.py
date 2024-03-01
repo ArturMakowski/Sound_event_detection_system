@@ -1,7 +1,5 @@
 import base64
 
-import sys
-
 import dcase_util
 import numpy as np
 import pandas as pd
@@ -10,7 +8,6 @@ import streamlit as st
 import torch
 import yaml
 
-sys.path.append("../")
 from desed_task.dataio.datasets import StronglyAnnotatedSet
 from encoder import ManyHotEncoder
 from model import CRNN
@@ -72,7 +69,7 @@ def inference(
         print(ref_df)
 
     audio_container = dcase_util.containers.AudioContainer().load(
-        f"/mnt/d/DESED_dataset/audio/validation/validation_16k/{dataset_strong[idx][3].split('/')[-1]}"
+        f"/mnt/d/DESED_dataset/audio/test/public/{dataset_strong[idx][3].split('/')[-1]}"
     )
     audio_container.data = np.mean(audio_container.data, axis=0)
 
@@ -99,7 +96,7 @@ def main():
 
     try:
         vis, audio, fs = inference(
-            idx, model_path="../dvclive/artifacts/epoch=58-step=12449.ckpt"
+            idx, model_path="../dvclive/artifacts/epoch=96-step=10282.ckpt"
         )
     except IndexError:
         st.error("Invalid index. Please enter a valid index.")
