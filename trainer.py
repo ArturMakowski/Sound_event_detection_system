@@ -230,9 +230,7 @@ class SED(pl.LightningModule):
             prog_bar=True,
             sync_dist=True,
         )
-        self.log(
-            "train/lr", self.opt.param_groups[-1]["lr"], prog_bar=True, sync_dist=True
-        )
+        self.log("train/lr", self.opt.param_groups[-1]["lr"], sync_dist=True)
 
         return loss
 
@@ -252,7 +250,7 @@ class SED(pl.LightningModule):
 
         loss = self.loss_fn(preds, labels)
 
-        self.log("val/synth/loss", loss)
+        self.log("val/synth/loss", loss, prog_bar=True)
 
         filenames_synth = [
             x
@@ -353,12 +351,20 @@ class SED(pl.LightningModule):
 
         self.log("val/obj_metric", obj_metric, prog_bar=True, sync_dist=True)
         self.log(
-            "val/synth/psds1_sed_scores_eval", psds1_sed_scores_eval, sync_dist=True
+            "val/synth/psds1_sed_scores_eval",
+            psds1_sed_scores_eval,
+            prog_bar=True,
+            sync_dist=True,
         )
         self.log(
-            "val/synth/intersection_f1_macro", intersection_f1_macro, sync_dist=True
+            "val/synth/intersection_f1_macro",
+            intersection_f1_macro,
+            prog_bar=True,
+            sync_dist=True,
         )
-        self.log("val/synth/event_f1_macro", synth_event_macro, sync_dist=True)
+        self.log(
+            "val/synth/event_f1_macro", synth_event_macro, prog_bar=True, sync_dist=True
+        )
 
         # * free the buffers
         self.val_buffer_synth = {
