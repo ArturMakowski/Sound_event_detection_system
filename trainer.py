@@ -56,6 +56,7 @@ class SED(pl.LightningModule):
         train_data=None,
         valid_data=None,
         test_data=None,
+        train_sampler=None,
         scheduler=None,
         fast_dev_run=False,
         evaluation=False,
@@ -69,6 +70,7 @@ class SED(pl.LightningModule):
         self.train_data = train_data
         self.valid_data = valid_data
         self.test_data = test_data
+        self.train_sampler = train_sampler
         self.scheduler = scheduler
         self.fast_dev_run = fast_dev_run
         self.evaluation = evaluation
@@ -210,31 +212,54 @@ class SED(pl.LightningModule):
            torch.Tensor, the loss to take into account.
         """
 
+        indx_synth, indx_weak = self.hyparams["training"]["batch_size"]
+        
         audio, labels, _ = batch
         features = self.mel_spec(audio)
 
+        batch_num = features.shape[0]
+        # deriving masks for each dataset
+        strong_mask = torch.zeros(batch_num).to(features).bool()
+        weak_mask = torch.zeros(batch_num).to(features).bool()
+        strong_mask[:indx_synth] = 1
+        weak_mask[indx_synth : indx_weak + indx_synth] = 1
+        
+        labels_weak = (torch.sum(labels[weak_mask], -1) > 0).float()
+        
         mixup_type = self.hparams["training"].get("mixup")
         if mixup_type is not None and 0.5 > random.random():
-            features, labels = mixup(features, labels, mixup_label_type=mixup_type)
+            
+            features[weak_mask], labels_weak = mixup(
+                features[weak_mask], labels_weak, mixup_label_type=mixup_type
+            )
+            features[strong_mask], labels[strong_mask] = mixup(
+                features[strong_mask], labels[strong_mask], mixup_label_type=mixup_type
+            )
 
-        # sed forward
-        preds = self.sed(self.scaler(self.take_log(features)))
+        
+        strong_preds, weak_preds = self.sed(self.scaler(self.take_log(features)))
 
-        # loss on strong labels
-        loss = self.loss_fn(preds, labels)
+        loss_strong = self.loss_fn(
+            strong_preds[strong_mask], labels[strong_mask]
+        )
+        # supervised loss on weakly labelled
+        loss_weak = self.loss_fn(weak_preds[weak_mask], labels_weak)
+        
+        # total supervised loss
+        total_loss = loss_strong + loss_weak
 
-        self.log("train/loss", loss, prog_bar=True, sync_dist=True)
+        self.log("train/loss_strong", loss_strong, prog_bar=True, sync_dist=True)
+        self.log("train/loss_weak", loss_weak, prog_bar=True, sync_dist=True)
+        self.log("train/total_loss", total_loss, prog_bar=True, sync_dist=True)
         self.log(
             "train/step",
             self.scheduler["scheduler"].step_num,
             prog_bar=True,
             sync_dist=True,
         )
-        self.log(
-            "train/lr", self.opt.param_groups[-1]["lr"], prog_bar=True, sync_dist=True
-        )
+        self.log("train/lr", self.opt.param_groups[-1]["lr"], sync_dist=True)
 
-        return loss
+        return total_loss
 
     def validation_step(self, batch, batch_indx):
         """Apply validation to a batch (step). Used during trainer.fit
@@ -248,11 +273,11 @@ class SED(pl.LightningModule):
         audio, labels, _, filenames = batch
 
         features = self.mel_spec(audio)
-        preds = self.sed(self.scaler(self.take_log(features)))
+        preds, _ = self.sed(self.scaler(self.take_log(features)))
 
         loss = self.loss_fn(preds, labels)
 
-        self.log("val/synth/loss", loss)
+        self.log("val/synth/loss", loss, prog_bar=True)
 
         filenames_synth = [
             x
@@ -353,12 +378,20 @@ class SED(pl.LightningModule):
 
         self.log("val/obj_metric", obj_metric, prog_bar=True, sync_dist=True)
         self.log(
-            "val/synth/psds1_sed_scores_eval", psds1_sed_scores_eval, sync_dist=True
+            "val/synth/psds1_sed_scores_eval",
+            psds1_sed_scores_eval,
+            prog_bar=True,
+            sync_dist=True,
         )
         self.log(
-            "val/synth/intersection_f1_macro", intersection_f1_macro, sync_dist=True
+            "val/synth/intersection_f1_macro",
+            intersection_f1_macro,
+            prog_bar=True,
+            sync_dist=True,
         )
-        self.log("val/synth/event_f1_macro", synth_event_macro, sync_dist=True)
+        self.log(
+            "val/synth/event_f1_macro", synth_event_macro, prog_bar=True, sync_dist=True
+        )
 
         # * free the buffers
         self.val_buffer_synth = {
@@ -384,7 +417,7 @@ class SED(pl.LightningModule):
         audio, labels, _, filenames = batch
 
         features = self.mel_spec(audio)
-        preds = self.sed(self.scaler(self.take_log(features)))
+        preds, _ = self.sed(self.scaler(self.take_log(features)))
 
         if not self.evaluation:
             loss = self.loss_fn(preds, labels)
@@ -537,7 +570,7 @@ class SED(pl.LightningModule):
     def train_dataloader(self):
         self.train_loader = torch.utils.data.DataLoader(
             self.train_data,
-            batch_size=self.hparams["training"]["batch_size"],
+            batch_sampler=self.train_sampler,
             num_workers=self.num_workers,
         )
         return self.train_loader

@@ -1,8 +1,9 @@
 import warnings
-import yaml
 
+import torch
 import torch.nn as nn
 import torchinfo
+import yaml
 
 
 # ! CNN
@@ -124,6 +125,7 @@ class CRNN(nn.Module):
         n_RNN_cell=128,
         n_layers_RNN=2,
         dropout_recurrent=0,
+        attention=True,
         **kwargs,
     ):
         """
@@ -156,6 +158,7 @@ class CRNN(nn.Module):
             **kwargs,
         )
 
+        self.attention = attention
         # n_in_channel,
         # activation="Relu",
         # conv_dropout=0,
@@ -180,6 +183,10 @@ class CRNN(nn.Module):
         self.dropout = nn.Dropout(dropout)
         self.dense = nn.Linear(n_RNN_cell * 2, nclass)
         self.sigmoid = nn.Sigmoid()
+
+        if self.attention:
+            self.dense_softmax = nn.Linear(n_RNN_cell * 2, nclass)
+            self.softmax = nn.Softmax(dim=-1)
 
     def forward(self, x, pad_mask=None, embeddings=None):
         # print(f'x.shape input = {x.shape}')
@@ -207,7 +214,15 @@ class CRNN(nn.Module):
         x = self.dropout(x)
         strong = self.dense(x)  # [bs, frames, nclass]
         strong = self.sigmoid(strong)
-        return strong.transpose(1, 2)
+
+        if self.attention:
+            sof = self.dense_softmax(x)  # [bs, frames, nclass]
+            sof = self.softmax(sof)
+            sof = torch.clamp(sof, min=1e-7, max=1)
+            weak = (strong * sof).sum(1) / sof.sum(1)  # [bs, nclass]
+        else:
+            weak = strong.mean(1)
+        return strong.transpose(1, 2), weak
 
 
 if __name__ == "__main__":

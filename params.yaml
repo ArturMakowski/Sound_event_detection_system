@@ -1,6 +1,6 @@
 training:
   #batch size: [synth, weak, unlabel]
-  batch_size: 128
+  batch_size: [24, 24]
   batch_size_val: 64
   n_epochs_warmup: 50 # num epochs used for exponential warmup
   num_workers: 8 # change according to your cpu
@@ -83,4 +83,5 @@ net:
   nb_filters: [ 16, 32, 64, 128, 128, 128, 128 ]
   pooling: [ [ 1, 2 ], [ 1, 2 ], [ 1, 2 ], [ 1, 2 ], [ 1, 2 ], [ 1, 2 ], [ 1, 2 ] ]
   dropout_recurrent: 0
+  attention: True
 
