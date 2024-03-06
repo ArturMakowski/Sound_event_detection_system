@@ -212,7 +212,7 @@ class SED(pl.LightningModule):
            torch.Tensor, the loss to take into account.
         """
 
-        indx_synth, indx_weak = self.hyparams["training"]["batch_size"]
+        indx_synth, indx_weak = self.hparams["training"]["batch_size"]
         
         audio, labels, _ = batch
         features = self.mel_spec(audio)
