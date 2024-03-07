@@ -1,5 +1,7 @@
 training:
-  batch_size: 128
+  batch_size:
+  - 24
+  - 24
   batch_size_val: 64
   n_epochs_warmup: 50
   num_workers: 8
@@ -121,4 +123,5 @@ net:
   - - 1
     - 2
   dropout_recurrent: 0
+  attention: true
 log_dir: ./exp/

@@ -5,5 +5,5 @@ stages:
     deps:
     - path: run_training.py
       hash: md5
-      md5: 1411a0d3b6d146291fc0816cde9a36a2
-      size: 9976
+      md5: d9fbe1507bf806bf1b4607f299c370f6
+      size: 10780
