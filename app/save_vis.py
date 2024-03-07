@@ -1,11 +1,12 @@
+import warnings
+from tqdm import tqdm
 from app import (
-    load_config,
-    initialize_sed,
-    load_model,
     create_dataset,
+    initialize_sed,
+    load_config,
+    load_model,
     make_prediction,
 )
-import warnings
 
 warnings.filterwarnings("ignore")
 
@@ -15,14 +16,19 @@ def save_visualizations(
 ) -> None:
     config = load_config()
     sed, encoder = initialize_sed(config)
-    sed = load_model(sed, model_path="../dvclive/artifacts/epoch=96-step=10282.ckpt")
+    sed = load_model(sed, model_path="../dvclive/artifacts/epoch=90-step=5915.ckpt")
     dataset_strong = create_dataset(config, encoder)
-    for idx, item in enumerate(dataset_strong):
+    pbar = tqdm(enumerate(dataset_strong), total=len(dataset_strong))
+    for idx, item in pbar:
         try:
             vis, _ = make_prediction(sed, dataset_strong, config, encoder, idx, False)
             vis.save(filename=f"{save_dir}/{idx}_vis.png")
         except Exception:
             pass
+        else:
+            pbar.set_description(
+                f"-------- Saved .png visualization for sample {idx + 1} --------"
+            )
 
 
 if __name__ == "__main__":
