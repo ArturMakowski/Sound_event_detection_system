@@ -598,7 +598,7 @@ class SED(pl.LightningModule):
     def forward(self, x):
         features = self.mel_spec(x)
         features = features.unsqueeze(0)
-        preds = self.sed(self.scaler(self.take_log(features)))
+        preds, _ = self.sed(self.scaler(self.take_log(features)))
         return preds
 
 

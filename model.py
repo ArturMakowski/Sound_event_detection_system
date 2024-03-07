@@ -189,15 +189,14 @@ class CRNN(nn.Module):
             self.softmax = nn.Softmax(dim=-1)
 
     def forward(self, x, pad_mask=None, embeddings=None):
-        # print(f'x.shape input = {x.shape}')
+        
+        # [batch_size, n_freq, n_frames]
         x = x.transpose(1, 2).unsqueeze(1)
-        # print(f'x.transpose(1, 2).unsqueeze(1).shape = {x.shape}')
-        # input size : (batch_size, n_channels, n_frames, n_freq)
+        # [batch_size, n_channels, n_frames, n_freq]
 
-        # conv features
         x = self.cnn(x)
         bs, chan, frames, freq = x.size()
-        # print(f'x.shape post cnn = {x.shape}')
+        
 
         if freq != 1:
             warnings.warn(
@@ -206,11 +205,11 @@ class CRNN(nn.Module):
             x = x.permute(0, 2, 1, 3)
             x = x.contiguous().view(bs, frames, chan * freq)
         else:
-            x = x.squeeze(-1)
-            x = x.permute(0, 2, 1)  # [bs, frames, chan]
+            x = x.squeeze(-1) # [batch_size, n_channels, n_frames]
+            x = x.permute(0, 2, 1)  # [batch_size, n_frames, n_channels]
 
         # print(f'x.shape pre rnn = {x.shape}')
-        x = self.rnn(x)
+        x = self.rnn(x) # [batch_size, n_frames, n_channels]
         x = self.dropout(x)
         strong = self.dense(x)  # [bs, frames, nclass]
         strong = self.sigmoid(strong)
