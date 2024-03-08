@@ -1,32 +1,30 @@
 import os
 import random
 from pathlib import Path
-import yaml
 
+import numpy as np
 import pandas as pd
 import pytorch_lightning as pl
+import sed_scores_eval
 import torch
+import yaml
 from torchaudio.transforms import AmplitudeToDB, MelSpectrogram
+from torchmetrics import F1
 
 from desed_task.data_augm import mixup
-from desed_task.utils.scaler import TorchScaler
-from encoder import ManyHotEncoder
-import numpy as np
-
-from utils import (
-    batched_decode_preds,
-    log_sedeval_metrics,
-)
 from desed_task.evaluation.evaluation_measures import (
     compute_per_intersection_macro_f1,
     compute_psds_from_operating_points,
     compute_psds_from_scores,
 )
-
-import sed_scores_eval
-
-from utils import classes_labels
+from desed_task.utils.scaler import TorchScaler
+from encoder import ManyHotEncoder
 from model import CRNN
+from utils import (
+    batched_decode_preds,
+    classes_labels,
+    log_sedeval_metrics,
+)
 
 
 class SED(pl.LightningModule):
@@ -99,8 +97,8 @@ class SED(pl.LightningModule):
         # * instantiating loss fn and scaler
         self.loss_fn = torch.nn.BCELoss()
 
-        self.get_weak_f1_seg_macro = pl.metrics.classification.F1( # type: ignore
-            len(self.encoder.labels),
+        self.get_weak_f1_seg_macro = F1(
+            num_classes=len(self.encoder.labels),
             average="macro",
             multilabel=True,
             compute_on_step=False,
@@ -220,7 +218,7 @@ class SED(pl.LightningModule):
         """
 
         indx_synth, indx_weak = self.hparams["training"]["batch_size"]
-        
+
         audio, labels, _ = batch
         features = self.mel_spec(audio)
 
@@ -230,12 +228,11 @@ class SED(pl.LightningModule):
         weak_mask = torch.zeros(batch_num).to(features).bool()
         strong_mask[:indx_synth] = 1
         weak_mask[indx_synth : indx_weak + indx_synth] = 1
-        
+
         labels_weak = (torch.sum(labels[weak_mask], -1) > 0).float()
-        
+
         mixup_type = self.hparams["training"].get("mixup")
         if mixup_type is not None and 0.5 > random.random():
-            
             features[weak_mask], labels_weak = mixup(
                 features[weak_mask], labels_weak, mixup_label_type=mixup_type
             )
@@ -243,15 +240,12 @@ class SED(pl.LightningModule):
                 features[strong_mask], labels[strong_mask], mixup_label_type=mixup_type
             )
 
-        
         strong_preds, weak_preds = self.sed(self.scaler(self.take_log(features)))
 
-        loss_strong = self.loss_fn(
-            strong_preds[strong_mask], labels[strong_mask]
-        )
+        loss_strong = self.loss_fn(strong_preds[strong_mask], labels[strong_mask])
         # supervised loss on weakly labelled
         loss_weak = self.loss_fn(weak_preds[weak_mask], labels_weak)
-        
+
         # total supervised loss
         total_loss = loss_strong + loss_weak
 
@@ -306,21 +300,15 @@ class SED(pl.LightningModule):
             .to(audio)
             .bool()
         )
-        
+
         if torch.any(weak_mask):
             labels_weak = (torch.sum(labels[weak_mask], -1) >= 1).float()
-            loss_weak = self.loss_fn(
-                weak_preds[weak_mask], labels_weak
-            )
+            loss_weak = self.loss_fn(weak_preds[weak_mask], labels_weak)
             self.log("val/synth/loss_weak", loss_weak, prog_bar=True)
-            self.get_weak_f1_seg_macro(
-                weak_preds[weak_mask], labels_weak
-            )
-            
+            self.get_weak_f1_seg_macro(weak_preds[weak_mask], labels_weak)
+
         if torch.any(strong_mask):
-            loss_strong = self.loss_fn(
-                strong_preds[strong_mask], labels[strong_mask]
-            )
+            loss_strong = self.loss_fn(strong_preds[strong_mask], labels[strong_mask])
             self.log("val/synth/loss_strong", loss_strong, prog_bar=True)
 
             filenames_synth = [
@@ -341,7 +329,9 @@ class SED(pl.LightningModule):
                 thresholds=list(self.val_buffer_synth.keys()),
             )
 
-            self.val_scores_postprocessed_buffer_synth.update(scores_postprocessed_strong)
+            self.val_scores_postprocessed_buffer_synth.update(
+                scores_postprocessed_strong
+            )
             for th in self.val_buffer_synth.keys():
                 self.val_buffer_synth[th] = pd.concat(
                     [self.val_buffer_synth[th], decoded_strong[th]], ignore_index=True
@@ -360,7 +350,7 @@ class SED(pl.LightningModule):
         """
 
         weak_f1_macro = self.get_weak_f1_seg_macro.compute()
-        
+
         # * synth val dataset
         ground_truth = sed_scores_eval.io.read_ground_truth_events(
             self.hparams["data"]["synth_val_tsv"]
@@ -445,7 +435,7 @@ class SED(pl.LightningModule):
             k: pd.DataFrame() for k in self.hparams["training"]["val_thresholds"]
         }
         self.val_scores_postprocessed_buffer_synth = {}
-        
+
         self.get_weak_f1_seg_macro.reset()
 
         return obj_metric
