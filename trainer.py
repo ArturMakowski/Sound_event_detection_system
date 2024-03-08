@@ -100,7 +100,6 @@ class SED(pl.LightningModule):
         self.get_weak_f1_seg_macro = torchmetrics.classification.f_beta.MultilabelF1Score(
             len(self.encoder.labels),
             average="macro",
-            compute_on_step=False,
         )
 
         self.scaler = self._init_scaler()
