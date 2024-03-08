@@ -7,9 +7,9 @@ import pandas as pd
 import pytorch_lightning as pl
 import sed_scores_eval
 import torch
+import torchmetrics
 import yaml
 from torchaudio.transforms import AmplitudeToDB, MelSpectrogram
-import torchmetrics
 
 from desed_task.data_augm import mixup
 from desed_task.evaluation.evaluation_measures import (
@@ -97,9 +97,11 @@ class SED(pl.LightningModule):
         # * instantiating loss fn and scaler
         self.loss_fn = torch.nn.BCELoss()
 
-        self.get_weak_f1_seg_macro = torchmetrics.classification.f_beta.MultilabelF1Score(
-            len(self.encoder.labels),
-            average="macro",
+        self.get_weak_f1_seg_macro = (
+            torchmetrics.classification.f_beta.MultilabelF1Score(
+                len(self.encoder.labels),
+                average="macro",
+            )
         )
 
         self.scaler = self._init_scaler()
@@ -302,7 +304,7 @@ class SED(pl.LightningModule):
         if torch.any(weak_mask):
             labels_weak = (torch.sum(labels[weak_mask], -1) >= 1).float()
             loss_weak = self.loss_fn(weak_preds[weak_mask], labels_weak)
-            self.log("val/synth/loss_weak", loss_weak, prog_bar=True)
+            self.log("val/weak/loss_weak", loss_weak, prog_bar=True)
             self.get_weak_f1_seg_macro(weak_preds[weak_mask], labels_weak)
 
         if torch.any(strong_mask):
@@ -411,7 +413,7 @@ class SED(pl.LightningModule):
         obj_metric = torch.tensor(weak_f1_macro.item() + synth_metric)
 
         self.log("val/obj_metric", obj_metric, prog_bar=True, sync_dist=True)
-        self.log("val/weak/macro_F1", weak_f1_macro)
+        self.log("val/weak/macro_F1", weak_f1_macro, prog_bar=True)
         self.log(
             "val/synth/psds1_sed_scores_eval",
             psds1_sed_scores_eval,
