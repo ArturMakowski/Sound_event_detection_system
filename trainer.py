@@ -99,6 +99,13 @@ class SED(pl.LightningModule):
         # * instantiating loss fn and scaler
         self.loss_fn = torch.nn.BCELoss()
 
+        self.get_weak_f1_seg_macro = pl.metrics.classification.F1( # type: ignore
+            len(self.encoder.labels),
+            average="macro",
+            multilabel=True,
+            compute_on_step=False,
+        )
+
         self.scaler = self._init_scaler()
 
         # * buffer for event based scores which we compute using sed-eval
@@ -273,35 +280,72 @@ class SED(pl.LightningModule):
         audio, labels, _, filenames = batch
 
         features = self.mel_spec(audio)
-        preds, _ = self.sed(self.scaler(self.take_log(features)))
+        strong_preds, weak_preds = self.sed(self.scaler(self.take_log(features)))
 
-        loss = self.loss_fn(preds, labels)
+        loss_strong = self.loss_fn(strong_preds, labels)
 
-        self.log("val/synth/loss", loss, prog_bar=True)
-
-        filenames_synth = [
-            x
-            for x in filenames
-            if Path(x).parent == Path(self.hparams["data"]["synth_val_folder"])
-        ]
-
-        (
-            scores_raw_strong,
-            scores_postprocessed_strong,
-            decoded_strong,
-        ) = batched_decode_preds(
-            preds,
-            filenames_synth,
-            self.encoder,
-            median_filter=self.hparams["training"]["median_window"],
-            thresholds=list(self.val_buffer_synth.keys()),
-        )
-
-        self.val_scores_postprocessed_buffer_synth.update(scores_postprocessed_strong)
-        for th in self.val_buffer_synth.keys():
-            self.val_buffer_synth[th] = pd.concat(
-                [self.val_buffer_synth[th], decoded_strong[th]], ignore_index=True
+        weak_mask = (
+            torch.tensor(
+                [
+                    str(Path(x).parent)
+                    == str(Path(self.hyparams["data"]["weak_folder"]))
+                    for x in filenames
+                ]
             )
+            .to(audio)
+            .bool()
+        )
+        strong_mask = (
+            torch.tensor(
+                [
+                    str(Path(x).parent)
+                    == str(Path(self.hyparams["data"]["synth_val_folder"]))
+                    for x in filenames
+                ]
+            )
+            .to(audio)
+            .bool()
+        )
+        
+        if torch.any(weak_mask):
+            labels_weak = (torch.sum(labels[weak_mask], -1) >= 1).float()
+            loss_weak = self.loss_fn(
+                weak_preds[weak_mask], labels_weak
+            )
+            self.log("val/synth/loss_weak", loss_weak, prog_bar=True)
+            self.get_weak_f1_seg_macro(
+                weak_preds[weak_mask], labels_weak
+            )
+            
+        if torch.any(strong_mask):
+            loss_strong = self.loss_fn(
+                strong_preds[strong_mask], labels[strong_mask]
+            )
+            self.log("val/synth/loss_strong", loss_strong, prog_bar=True)
+
+            filenames_synth = [
+                x
+                for x in filenames
+                if Path(x).parent == Path(self.hparams["data"]["synth_val_folder"])
+            ]
+
+            (
+                scores_raw_strong,
+                scores_postprocessed_strong,
+                decoded_strong,
+            ) = batched_decode_preds(
+                strong_preds[strong_mask],
+                filenames_synth,
+                self.encoder,
+                median_filter=self.hparams["training"]["median_window"],
+                thresholds=list(self.val_buffer_synth.keys()),
+            )
+
+            self.val_scores_postprocessed_buffer_synth.update(scores_postprocessed_strong)
+            for th in self.val_buffer_synth.keys():
+                self.val_buffer_synth[th] = pd.concat(
+                    [self.val_buffer_synth[th], decoded_strong[th]], ignore_index=True
+                )
 
         return
 
@@ -315,6 +359,8 @@ class SED(pl.LightningModule):
             torch.Tensor, the objective metric to be used to choose the best model from for example.
         """
 
+        weak_f1_macro = self.get_weak_f1_seg_macro.compute()
+        
         # * synth val dataset
         ground_truth = sed_scores_eval.io.read_ground_truth_events(
             self.hparams["data"]["synth_val_tsv"]
@@ -374,9 +420,10 @@ class SED(pl.LightningModule):
                 f"obj_metric_synth_type: {obj_metric_synth_type} not implemented."
             )
 
-        obj_metric = torch.tensor(synth_metric)
+        obj_metric = torch.tensor(weak_f1_macro.item() + synth_metric)
 
         self.log("val/obj_metric", obj_metric, prog_bar=True, sync_dist=True)
+        self.log("val/weak/macro_F1", weak_f1_macro)
         self.log(
             "val/synth/psds1_sed_scores_eval",
             psds1_sed_scores_eval,
@@ -398,6 +445,8 @@ class SED(pl.LightningModule):
             k: pd.DataFrame() for k in self.hparams["training"]["val_thresholds"]
         }
         self.val_scores_postprocessed_buffer_synth = {}
+        
+        self.get_weak_f1_seg_macro.reset()
 
         return obj_metric
 
