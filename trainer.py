@@ -9,7 +9,7 @@ import sed_scores_eval
 import torch
 import yaml
 from torchaudio.transforms import AmplitudeToDB, MelSpectrogram
-from torchmetrics import F1
+import torchmetrics
 
 from desed_task.data_augm import mixup
 from desed_task.evaluation.evaluation_measures import (
@@ -97,10 +97,9 @@ class SED(pl.LightningModule):
         # * instantiating loss fn and scaler
         self.loss_fn = torch.nn.BCELoss()
 
-        self.get_weak_f1_seg_macro = F1(
-            num_classes=len(self.encoder.labels),
+        self.get_weak_f1_seg_macro = torchmetrics.classification.f_beta.MultilabelF1Score(
+            len(self.encoder.labels),
             average="macro",
-            multilabel=True,
             compute_on_step=False,
         )
 
