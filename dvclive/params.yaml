@@ -21,6 +21,7 @@ training:
   mixup: soft
   obj_metric_synth_type: intersection
   enable_progress_bar: true
+  weak_split: 0.9
 scaler:
   statistic: instance
   normtype: minmax
