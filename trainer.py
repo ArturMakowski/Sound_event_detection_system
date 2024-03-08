@@ -281,7 +281,7 @@ class SED(pl.LightningModule):
             torch.tensor(
                 [
                     str(Path(x).parent)
-                    == str(Path(self.hyparams["data"]["weak_folder"]))
+                    == str(Path(self.hparams["data"]["weak_folder"]))
                     for x in filenames
                 ]
             )
@@ -292,7 +292,7 @@ class SED(pl.LightningModule):
             torch.tensor(
                 [
                     str(Path(x).parent)
-                    == str(Path(self.hyparams["data"]["synth_val_folder"]))
+                    == str(Path(self.hparams["data"]["synth_val_folder"]))
                     for x in filenames
                 ]
             )

@@ -103,22 +103,36 @@ def single_run(
             )
 
         weak_df = pd.read_csv(config["data"]["weak_tsv"], sep="\t")
+        train_weak_df = weak_df.sample(
+            frac=config["training"]["weak_split"],
+            random_state=config["training"]["seed"],
+        )
+        valid_weak_df = weak_df.drop(train_weak_df.index).reset_index(drop=True)
+        train_weak_df = train_weak_df.reset_index(drop=True)
         weak_set = WeakSet(
             config["data"]["weak_folder"],
-            weak_df,
+            train_weak_df,
             encoder,
             pad_to=config["data"]["audio_max_len"],
         )
         
-        synth_df_val = pd.read_csv(config["data"]["synth_val_tsv"], sep="\t")
-        valid_dataset = StronglyAnnotatedSet(
+        strong_df_val = pd.read_csv(config["data"]["synth_val_tsv"], sep="\t")
+        strong_val = StronglyAnnotatedSet(
             config["data"]["synth_val_folder"],
-            synth_df_val,
+            strong_df_val,
             encoder,
             return_filename=True,
             pad_to=config["data"]["audio_max_len"],
         )
 
+        weak_val = WeakSet(
+            config["data"]["weak_folder"],
+            valid_weak_df,
+            encoder,
+            pad_to=config["data"]["audio_max_len"],
+            return_filename=True,
+        )
+        
         if real_data:
             synth_set = torch.utils.data.ConcatDataset([real_set, synth_set])
 
@@ -129,6 +143,8 @@ def single_run(
         samplers = [torch.utils.data.RandomSampler(x) for x in tot_train_data]
         batch_sampler = ConcatDatasetBatchSampler(samplers, batch_sizes)
 
+        valid_dataset = torch.utils.data.ConcatDataset([strong_val, weak_val])
+        
         #####* training params and optimizers #####
         epoch_len = min(
             [
