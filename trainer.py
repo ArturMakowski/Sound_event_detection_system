@@ -1,5 +1,6 @@
 import os
 import random
+import warnings
 from pathlib import Path
 
 import numpy as np
@@ -141,6 +142,17 @@ class SED(pl.LightningModule):
 
     def lr_scheduler_step(self, scheduler, optimizer_idx, metric):
         scheduler.step()
+
+    def on_train_start(self) -> None:
+        if not self.fast_dev_run:
+            to_ignore = [
+                ".*Trying to infer the `batch_size` from an ambiguous collection.*",
+                ".*invalid value encountered in divide*",
+                ".*mean of empty slice*",
+                ".*self.log*",
+            ]
+            for message in to_ignore:
+                warnings.filterwarnings("ignore", message)
 
     def _init_scaler(self):
         """Scaler inizialization function. It can be either a dataset or instance scaler.
@@ -334,7 +346,7 @@ class SED(pl.LightningModule):
                 self.val_buffer_strong[th] = pd.concat(
                     [self.val_buffer_strong[th], decoded_strong[th]], ignore_index=True
                 )
-                
+
         # total supervised loss
         total_loss = loss_strong + loss_weak
         self.log("val/total_loss", total_loss, prog_bar=True, sync_dist=True)
@@ -431,7 +443,10 @@ class SED(pl.LightningModule):
             sync_dist=True,
         )
         self.log(
-            "val/strong/event_f1_macro", strong_event_macro, prog_bar=True, sync_dist=True
+            "val/strong/event_f1_macro",
+            strong_event_macro,
+            prog_bar=True,
+            sync_dist=True,
         )
         self.log(
             "val/strong/segment_f1_macro",
