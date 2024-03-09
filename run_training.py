@@ -223,7 +223,6 @@ def single_run(
         scheduler=exp_scheduler,
         fast_dev_run=fast_dev_run,
         evaluation=evaluation,
-        model_name=model_name,
     )
 
     if fast_dev_run:
