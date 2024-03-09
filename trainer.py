@@ -334,6 +334,10 @@ class SED(pl.LightningModule):
                 self.val_buffer_strong[th] = pd.concat(
                     [self.val_buffer_strong[th], decoded_strong[th]], ignore_index=True
                 )
+                
+        # total supervised loss
+        total_loss = loss_strong + loss_weak
+        self.log("val/total_loss", total_loss, prog_bar=True, sync_dist=True)
 
         return
 
