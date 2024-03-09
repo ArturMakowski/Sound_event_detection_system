@@ -107,7 +107,7 @@ class SED(pl.LightningModule):
         self.scaler = self._init_scaler()
 
         # * buffer for event based scores which we compute using sed-eval
-        self.val_buffer_synth = {
+        self.val_buffer_strong = {
             k: pd.DataFrame() for k in self.hparams["training"]["val_thresholds"]
         }
 
@@ -115,7 +115,7 @@ class SED(pl.LightningModule):
             k: pd.DataFrame() for k in self.hparams["training"]["val_thresholds"]
         }
 
-        self.val_scores_postprocessed_buffer_synth = {}
+        self.val_scores_postprocessed_buffer_strong = {}
 
         test_n_thresholds = self.hparams["training"]["n_test_thresholds"]
         test_thresholds = np.arange(
@@ -217,7 +217,7 @@ class SED(pl.LightningModule):
            torch.Tensor, the loss to take into account.
         """
 
-        indx_synth, indx_weak = self.hparams["training"]["batch_size"]
+        indx_strong, indx_weak = self.hparams["training"]["batch_size"]
 
         audio, labels, _ = batch
         features = self.mel_spec(audio)
@@ -226,8 +226,8 @@ class SED(pl.LightningModule):
         # deriving masks for each dataset
         strong_mask = torch.zeros(batch_num).to(features).bool()
         weak_mask = torch.zeros(batch_num).to(features).bool()
-        strong_mask[:indx_synth] = 1
-        weak_mask[indx_synth : indx_weak + indx_synth] = 1
+        strong_mask[:indx_strong] = 1
+        weak_mask[indx_strong : indx_weak + indx_strong] = 1
 
         labels_weak = (torch.sum(labels[weak_mask], -1) > 0).float()
 
@@ -276,8 +276,6 @@ class SED(pl.LightningModule):
         features = self.mel_spec(audio)
         strong_preds, weak_preds = self.sed(self.scaler(self.take_log(features)))
 
-        loss_strong = self.loss_fn(strong_preds, labels)
-
         weak_mask = (
             torch.tensor(
                 [
@@ -309,9 +307,9 @@ class SED(pl.LightningModule):
 
         if torch.any(strong_mask):
             loss_strong = self.loss_fn(strong_preds[strong_mask], labels[strong_mask])
-            self.log("val/synth/loss_strong", loss_strong, prog_bar=True)
+            self.log("val/strong/loss_strong", loss_strong, prog_bar=True)
 
-            filenames_synth = [
+            filenames_strong = [
                 x
                 for x in filenames
                 if Path(x).parent == Path(self.hparams["data"]["synth_val_folder"])
@@ -323,18 +321,18 @@ class SED(pl.LightningModule):
                 decoded_strong,
             ) = batched_decode_preds(
                 strong_preds[strong_mask],
-                filenames_synth,
+                filenames_strong,
                 self.encoder,
                 median_filter=self.hparams["training"]["median_window"],
-                thresholds=list(self.val_buffer_synth.keys()),
+                thresholds=list(self.val_buffer_strong.keys()),
             )
 
-            self.val_scores_postprocessed_buffer_synth.update(
+            self.val_scores_postprocessed_buffer_strong.update(
                 scores_postprocessed_strong
             )
-            for th in self.val_buffer_synth.keys():
-                self.val_buffer_synth[th] = pd.concat(
-                    [self.val_buffer_synth[th], decoded_strong[th]], ignore_index=True
+            for th in self.val_buffer_strong.keys():
+                self.val_buffer_strong[th] = pd.concat(
+                    [self.val_buffer_strong[th], decoded_strong[th]], ignore_index=True
                 )
 
         return
@@ -351,7 +349,7 @@ class SED(pl.LightningModule):
 
         weak_f1_macro = self.get_weak_f1_seg_macro.compute()
 
-        # * synth val dataset
+        # * strong val dataset
         ground_truth = sed_scores_eval.io.read_ground_truth_events(
             self.hparams["data"]["synth_val_tsv"]
         )
@@ -361,11 +359,11 @@ class SED(pl.LightningModule):
         if self.fast_dev_run:
             ground_truth = {
                 audio_id: ground_truth[audio_id]
-                for audio_id in self.val_scores_postprocessed_buffer_synth
+                for audio_id in self.val_scores_postprocessed_buffer_strong
             }
             audio_durations = {
                 audio_id: audio_durations[audio_id]
-                for audio_id in self.val_scores_postprocessed_buffer_synth
+                for audio_id in self.val_scores_postprocessed_buffer_strong
             }
         else:
             # * drop audios without events
@@ -376,7 +374,7 @@ class SED(pl.LightningModule):
                 audio_id: audio_durations[audio_id] for audio_id in ground_truth.keys()
             }
         psds1_sed_scores_eval = compute_psds_from_scores(
-            self.val_scores_postprocessed_buffer_synth,
+            self.val_scores_postprocessed_buffer_strong,
             ground_truth,
             audio_durations,
             dtc_threshold=0.7,
@@ -387,54 +385,54 @@ class SED(pl.LightningModule):
             # save_dir=os.path.join(save_dir, "", "scenario1"),
         )
         intersection_f1_macro = compute_per_intersection_macro_f1(
-            self.val_buffer_synth,
+            self.val_buffer_strong,
             self.hparams["data"]["synth_val_tsv"],
             self.hparams["data"]["synth_val_dur"],
         )
-        synth_event_macro = log_sedeval_metrics(
-            self.val_buffer_synth[0.5],
+        strong_event_macro = log_sedeval_metrics(
+            self.val_buffer_strong[0.5],
             self.hparams["data"]["synth_val_tsv"],
         )[0]
 
-        obj_metric_synth_type = self.hparams["training"].get("obj_metric_synth_type")
-        if obj_metric_synth_type is None:
-            synth_metric = psds1_sed_scores_eval
-        elif obj_metric_synth_type == "event":
-            synth_metric = synth_event_macro
-        elif obj_metric_synth_type == "intersection":
-            synth_metric = intersection_f1_macro
-        elif obj_metric_synth_type == "psds":
-            synth_metric = psds1_sed_scores_eval
+        obj_metric_strong_type = self.hparams["training"].get("obj_metric_strong_type")
+        if obj_metric_strong_type is None:
+            strong_metric = psds1_sed_scores_eval
+        elif obj_metric_strong_type == "event":
+            strong_metric = strong_event_macro
+        elif obj_metric_strong_type == "intersection":
+            strong_metric = intersection_f1_macro
+        elif obj_metric_strong_type == "psds":
+            strong_metric = psds1_sed_scores_eval
         else:
             raise NotImplementedError(
-                f"obj_metric_synth_type: {obj_metric_synth_type} not implemented."
+                f"obj_metric_strong_type: {obj_metric_strong_type} not implemented."
             )
 
-        obj_metric = torch.tensor(weak_f1_macro.item() + synth_metric)
+        obj_metric = torch.tensor(weak_f1_macro.item() + strong_metric)
 
         self.log("val/obj_metric", obj_metric, prog_bar=True, sync_dist=True)
         self.log("val/weak/macro_F1", weak_f1_macro, prog_bar=True)
         self.log(
-            "val/synth/psds1_sed_scores_eval",
+            "val/strong/psds1_sed_scores_eval",
             psds1_sed_scores_eval,
             prog_bar=True,
             sync_dist=True,
         )
         self.log(
-            "val/synth/intersection_f1_macro",
+            "val/strong/intersection_f1_macro",
             intersection_f1_macro,
             prog_bar=True,
             sync_dist=True,
         )
         self.log(
-            "val/synth/event_f1_macro", synth_event_macro, prog_bar=True, sync_dist=True
+            "val/strong/event_f1_macro", strong_event_macro, prog_bar=True, sync_dist=True
         )
 
         # * free the buffers
-        self.val_buffer_synth = {
+        self.val_buffer_strong = {
             k: pd.DataFrame() for k in self.hparams["training"]["val_thresholds"]
         }
-        self.val_scores_postprocessed_buffer_synth = {}
+        self.val_scores_postprocessed_buffer_strong = {}
 
         self.get_weak_f1_seg_macro.reset()
 
@@ -580,7 +578,7 @@ class SED(pl.LightningModule):
                 os.path.join(save_dir, ""),
             )[0]
 
-            # synth dataset
+            # strong dataset
             intersection_f1_macro = compute_per_intersection_macro_f1(
                 {"0.5": self.decoded_05_buffer},
                 self.hparams["data"]["test_tsv"],
