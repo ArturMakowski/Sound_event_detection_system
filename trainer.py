@@ -393,10 +393,12 @@ class SED(pl.LightningModule):
             self.hparams["data"]["synth_val_tsv"],
             self.hparams["data"]["synth_val_dur"],
         )
-        strong_event_macro = log_sedeval_metrics(
+        sed_eval_metrics = log_sedeval_metrics(
             self.val_buffer_strong[0.5],
             self.hparams["data"]["synth_val_tsv"],
-        )[0]
+        )
+        strong_event_macro = sed_eval_metrics[0]
+        strong_segment_macro = sed_eval_metrics[2]
 
         obj_metric_strong_type = self.hparams["training"].get("obj_metric_strong_type")
         if obj_metric_strong_type is None:
@@ -430,6 +432,12 @@ class SED(pl.LightningModule):
         )
         self.log(
             "val/strong/event_f1_macro", strong_event_macro, prog_bar=True, sync_dist=True
+        )
+        self.log(
+            "val/strong/segment_f1_macro",
+            strong_segment_macro,
+            prog_bar=True,
+            sync_dist=True,
         )
 
         # * free the buffers
@@ -576,11 +584,13 @@ class SED(pl.LightningModule):
                 save_dir=os.path.join(save_dir, "", "scenario2"),
             )
 
-            event_macro = log_sedeval_metrics(
+            sed_eval_metrics = log_sedeval_metrics(
                 self.decoded_05_buffer,
                 self.hparams["data"]["test_tsv"],
                 os.path.join(save_dir, ""),
-            )[0]
+            )
+            event_macro = sed_eval_metrics[0]
+            segment_macro = sed_eval_metrics[2]
 
             # strong dataset
             intersection_f1_macro = compute_per_intersection_macro_f1(
@@ -594,6 +604,7 @@ class SED(pl.LightningModule):
                 "test/psds1_sed_scores_eval": psds1_sed_scores_eval,
                 "test/psds2_psds_eval": psds2_psds_eval,
                 "test/psds2_sed_scores_eval": psds2_sed_scores_eval,
+                "test/segment_f1_macro": segment_macro,
                 "test/event_f1_macro": event_macro,
                 "test/intersection_f1_macro": intersection_f1_macro,
             }
