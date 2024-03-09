@@ -181,11 +181,10 @@ def single_run(
                 # Check if there is any file that starts with the model_name
                 if not any(f.startswith(model_name) for f in os.listdir(checkpoint_dir)):
                     return model_name
-                
-        model_name = None
+        model_name = generate_unique_model_name("dvclive/artifacts/")
+        config.update({"model_name": model_name})
         
         if callbacks is None:
-            model_name = generate_unique_model_name("dvclive/artifacts/")
             callbacks = [
                 EarlyStopping(
                     monitor="val/obj_metric",
@@ -195,7 +194,7 @@ def single_run(
                 ),
                 ModelCheckpoint(
                     logger.log_dir,
-                    filename=model_name + "-{epoch:02d}-{val/obj_metric:.2f}",
+                    filename=model_name,
                     monitor="val/obj_metric",
                     save_top_k=1,
                     mode="max",

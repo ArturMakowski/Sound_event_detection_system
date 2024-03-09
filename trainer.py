@@ -59,7 +59,6 @@ class SED(pl.LightningModule):
         scheduler=None,
         fast_dev_run=False,
         evaluation=False,
-        model_name=None,
     ):
         super(SED, self).__init__()
         self.hparams.update(hparams)
@@ -74,7 +73,6 @@ class SED(pl.LightningModule):
         self.scheduler = scheduler
         self.fast_dev_run = fast_dev_run
         self.evaluation = evaluation
-        self.model_name = model_name
 
         if self.fast_dev_run:
             self.num_workers = 1
@@ -633,10 +631,6 @@ class SED(pl.LightningModule):
 
         for key in results.keys():
             self.log(key, results[key], prog_bar=True, logger=True, sync_dist=True)
-            
-    def on_train_end(self):
-        if self.model_name is not None:
-            self.log("model_name", self.model_name, prog_bar=True, logger=True)
 
     def configure_optimizers(self):
         return [self.opt], [self.scheduler]
