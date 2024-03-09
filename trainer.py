@@ -350,8 +350,9 @@ class SED(pl.LightningModule):
                 )
 
         # total supervised loss
-        total_loss = loss_strong + loss_weak
-        self.log("val/total_loss", total_loss, prog_bar=True, sync_dist=True)
+        if torch.any(strong_mask) and torch.any(weak_mask):
+            total_loss = loss_strong + loss_weak
+            self.log("val/total_loss", total_loss, prog_bar=True, sync_dist=True)
 
         return
 
