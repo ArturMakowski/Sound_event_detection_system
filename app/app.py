@@ -190,11 +190,11 @@ def inference(
 def main() -> None:
     st.title("SED Visualization App")
 
-    idx = st.number_input("Enter the index:", value=5)
+    idx = st.number_input("Enter the index:", value=97)
 
     try:
         vis, audio, fs = inference(
-            idx, model_path="../dvclive/artifacts/epoch=96-step=10282.ckpt"
+            idx, model_path="../dvclive/artifacts/epoch=96-step=5723.ckpt"
         )
     except IndexError:
         st.error("Invalid index. Please enter a valid index.")

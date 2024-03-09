@@ -4,7 +4,8 @@ import pandas as pd
 import torch
 import yaml
 
-from desed_task.dataio.datasets import StronglyAnnotatedSet, UnlabeledSet
+from desed_task.dataio import ConcatDatasetBatchSampler
+from desed_task.dataio.datasets import StronglyAnnotatedSet, WeakSet, UnlabeledSet
 from model import CRNN
 from encoder import ManyHotEncoder
 from desed_task.utils.schedulers import ExponentialWarmup
@@ -101,23 +102,59 @@ def single_run(
                 pad_to=config["data"]["audio_max_len"],
             )
 
-        synth_df_val = pd.read_csv(config["data"]["synth_val_tsv"], sep="\t")
-        valid_dataset = StronglyAnnotatedSet(
+        weak_df = pd.read_csv(config["data"]["weak_tsv"], sep="\t")
+        train_weak_df = weak_df.sample(
+            frac=config["training"]["weak_split"],
+            random_state=config["training"]["seed"],
+        )
+        valid_weak_df = weak_df.drop(train_weak_df.index).reset_index(drop=True)
+        train_weak_df = train_weak_df.reset_index(drop=True)
+        weak_set = WeakSet(
+            config["data"]["weak_folder"],
+            train_weak_df,
+            encoder,
+            pad_to=config["data"]["audio_max_len"],
+        )
+        
+        strong_df_val = pd.read_csv(config["data"]["synth_val_tsv"], sep="\t")
+        strong_val = StronglyAnnotatedSet(
             config["data"]["synth_val_folder"],
-            synth_df_val,
+            strong_df_val,
             encoder,
             return_filename=True,
             pad_to=config["data"]["audio_max_len"],
         )
 
+        weak_val = WeakSet(
+            config["data"]["weak_folder"],
+            valid_weak_df,
+            encoder,
+            pad_to=config["data"]["audio_max_len"],
+            return_filename=True,
+        )
+        
         if real_data:
-            train_dataset = torch.utils.data.ConcatDataset([real_set, synth_set])
-        else:
-            train_dataset = synth_set
+            synth_set = torch.utils.data.ConcatDataset([real_set, synth_set])
 
+        tot_train_data = [synth_set, weak_set]
+        train_dataset = torch.utils.data.ConcatDataset(tot_train_data)
+
+        batch_sizes = config["training"]["batch_size"]
+        samplers = [torch.utils.data.RandomSampler(x) for x in tot_train_data]
+        batch_sampler = ConcatDatasetBatchSampler(samplers, batch_sizes)
+
+        valid_dataset = torch.utils.data.ConcatDataset([strong_val, weak_val])
+        
         #####* training params and optimizers #####
-        epoch_len = len(train_dataset) // (
-            config["training"]["batch_size"] * config["training"]["accumulate_batches"]
+        epoch_len = min(
+            [
+                len(tot_train_data[indx])
+                // (
+                    config["training"]["batch_size"][indx]
+                    * config["training"]["accumulate_batches"]
+                )
+                for indx in range(len(tot_train_data))
+            ]
         )
 
         opt = torch.optim.Adam(
@@ -171,6 +208,7 @@ def single_run(
         train_data=train_dataset,
         valid_data=valid_dataset,
         test_data=test_dataset,
+        train_sampler=batch_sampler,
         scheduler=exp_scheduler,
         fast_dev_run=fast_dev_run,
         evaluation=evaluation,

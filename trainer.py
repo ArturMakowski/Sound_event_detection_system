@@ -1,32 +1,31 @@
 import os
 import random
+import warnings
 from pathlib import Path
-import yaml
 
+import numpy as np
 import pandas as pd
 import pytorch_lightning as pl
+import sed_scores_eval
 import torch
+import torchmetrics
+import yaml
 from torchaudio.transforms import AmplitudeToDB, MelSpectrogram
 
 from desed_task.data_augm import mixup
-from desed_task.utils.scaler import TorchScaler
-from encoder import ManyHotEncoder
-import numpy as np
-
-from utils import (
-    batched_decode_preds,
-    log_sedeval_metrics,
-)
 from desed_task.evaluation.evaluation_measures import (
     compute_per_intersection_macro_f1,
     compute_psds_from_operating_points,
     compute_psds_from_scores,
 )
-
-import sed_scores_eval
-
-from utils import classes_labels
+from desed_task.utils.scaler import TorchScaler
+from encoder import ManyHotEncoder
 from model import CRNN
+from utils import (
+    batched_decode_preds,
+    classes_labels,
+    log_sedeval_metrics,
+)
 
 
 class SED(pl.LightningModule):
@@ -56,6 +55,7 @@ class SED(pl.LightningModule):
         train_data=None,
         valid_data=None,
         test_data=None,
+        train_sampler=None,
         scheduler=None,
         fast_dev_run=False,
         evaluation=False,
@@ -69,6 +69,7 @@ class SED(pl.LightningModule):
         self.train_data = train_data
         self.valid_data = valid_data
         self.test_data = test_data
+        self.train_sampler = train_sampler
         self.scheduler = scheduler
         self.fast_dev_run = fast_dev_run
         self.evaluation = evaluation
@@ -97,10 +98,17 @@ class SED(pl.LightningModule):
         # * instantiating loss fn and scaler
         self.loss_fn = torch.nn.BCELoss()
 
+        self.get_weak_f1_seg_macro = (
+            torchmetrics.classification.f_beta.MultilabelF1Score(
+                len(self.encoder.labels),
+                average="macro",
+            )
+        )
+
         self.scaler = self._init_scaler()
 
         # * buffer for event based scores which we compute using sed-eval
-        self.val_buffer_synth = {
+        self.val_buffer_strong = {
             k: pd.DataFrame() for k in self.hparams["training"]["val_thresholds"]
         }
 
@@ -108,7 +116,7 @@ class SED(pl.LightningModule):
             k: pd.DataFrame() for k in self.hparams["training"]["val_thresholds"]
         }
 
-        self.val_scores_postprocessed_buffer_synth = {}
+        self.val_scores_postprocessed_buffer_strong = {}
 
         test_n_thresholds = self.hparams["training"]["n_test_thresholds"]
         test_thresholds = np.arange(
@@ -134,6 +142,17 @@ class SED(pl.LightningModule):
 
     def lr_scheduler_step(self, scheduler, optimizer_idx, metric):
         scheduler.step()
+
+    def on_train_start(self) -> None:
+        if not self.fast_dev_run:
+            to_ignore = [
+                ".*Trying to infer the `batch_size` from an ambiguous collection.*",
+                ".*invalid value encountered in divide*",
+                ".*mean of empty slice*",
+                ".*self.log*",
+            ]
+            for message in to_ignore:
+                warnings.filterwarnings("ignore", message)
 
     def _init_scaler(self):
         """Scaler inizialization function. It can be either a dataset or instance scaler.
@@ -210,20 +229,41 @@ class SED(pl.LightningModule):
            torch.Tensor, the loss to take into account.
         """
 
+        indx_strong, indx_weak = self.hparams["training"]["batch_size"]
+
         audio, labels, _ = batch
         features = self.mel_spec(audio)
 
+        batch_num = features.shape[0]
+        # deriving masks for each dataset
+        strong_mask = torch.zeros(batch_num).to(features).bool()
+        weak_mask = torch.zeros(batch_num).to(features).bool()
+        strong_mask[:indx_strong] = 1
+        weak_mask[indx_strong : indx_weak + indx_strong] = 1
+
+        labels_weak = (torch.sum(labels[weak_mask], -1) > 0).float()
+
         mixup_type = self.hparams["training"].get("mixup")
         if mixup_type is not None and 0.5 > random.random():
-            features, labels = mixup(features, labels, mixup_label_type=mixup_type)
+            features[weak_mask], labels_weak = mixup(
+                features[weak_mask], labels_weak, mixup_label_type=mixup_type
+            )
+            features[strong_mask], labels[strong_mask] = mixup(
+                features[strong_mask], labels[strong_mask], mixup_label_type=mixup_type
+            )
 
-        # sed forward
-        preds = self.sed(self.scaler(self.take_log(features)))
+        strong_preds, weak_preds = self.sed(self.scaler(self.take_log(features)))
 
-        # loss on strong labels
-        loss = self.loss_fn(preds, labels)
+        loss_strong = self.loss_fn(strong_preds[strong_mask], labels[strong_mask])
+        # supervised loss on weakly labelled
+        loss_weak = self.loss_fn(weak_preds[weak_mask], labels_weak)
 
-        self.log("train/loss", loss, prog_bar=True, sync_dist=True)
+        # total supervised loss
+        total_loss = loss_strong + loss_weak
+
+        self.log("train/loss_strong", loss_strong, prog_bar=True, sync_dist=True)
+        self.log("train/loss_weak", loss_weak, prog_bar=True, sync_dist=True)
+        self.log("train/total_loss", total_loss, prog_bar=True, sync_dist=True)
         self.log(
             "train/step",
             self.scheduler["scheduler"].step_num,
@@ -232,7 +272,7 @@ class SED(pl.LightningModule):
         )
         self.log("train/lr", self.opt.param_groups[-1]["lr"], sync_dist=True)
 
-        return loss
+        return total_loss
 
     def validation_step(self, batch, batch_indx):
         """Apply validation to a batch (step). Used during trainer.fit
@@ -246,35 +286,70 @@ class SED(pl.LightningModule):
         audio, labels, _, filenames = batch
 
         features = self.mel_spec(audio)
-        preds = self.sed(self.scaler(self.take_log(features)))
+        strong_preds, weak_preds = self.sed(self.scaler(self.take_log(features)))
 
-        loss = self.loss_fn(preds, labels)
-
-        self.log("val/synth/loss", loss, prog_bar=True)
-
-        filenames_synth = [
-            x
-            for x in filenames
-            if Path(x).parent == Path(self.hparams["data"]["synth_val_folder"])
-        ]
-
-        (
-            scores_raw_strong,
-            scores_postprocessed_strong,
-            decoded_strong,
-        ) = batched_decode_preds(
-            preds,
-            filenames_synth,
-            self.encoder,
-            median_filter=self.hparams["training"]["median_window"],
-            thresholds=list(self.val_buffer_synth.keys()),
+        weak_mask = (
+            torch.tensor(
+                [
+                    str(Path(x).parent)
+                    == str(Path(self.hparams["data"]["weak_folder"]))
+                    for x in filenames
+                ]
+            )
+            .to(audio)
+            .bool()
+        )
+        strong_mask = (
+            torch.tensor(
+                [
+                    str(Path(x).parent)
+                    == str(Path(self.hparams["data"]["synth_val_folder"]))
+                    for x in filenames
+                ]
+            )
+            .to(audio)
+            .bool()
         )
 
-        self.val_scores_postprocessed_buffer_synth.update(scores_postprocessed_strong)
-        for th in self.val_buffer_synth.keys():
-            self.val_buffer_synth[th] = pd.concat(
-                [self.val_buffer_synth[th], decoded_strong[th]], ignore_index=True
+        if torch.any(weak_mask):
+            labels_weak = (torch.sum(labels[weak_mask], -1) >= 1).float()
+            loss_weak = self.loss_fn(weak_preds[weak_mask], labels_weak)
+            self.log("val/weak/loss_weak", loss_weak, prog_bar=True)
+            self.get_weak_f1_seg_macro(weak_preds[weak_mask], labels_weak)
+
+        if torch.any(strong_mask):
+            loss_strong = self.loss_fn(strong_preds[strong_mask], labels[strong_mask])
+            self.log("val/strong/loss_strong", loss_strong, prog_bar=True)
+
+            filenames_strong = [
+                x
+                for x in filenames
+                if Path(x).parent == Path(self.hparams["data"]["synth_val_folder"])
+            ]
+
+            (
+                scores_raw_strong,
+                scores_postprocessed_strong,
+                decoded_strong,
+            ) = batched_decode_preds(
+                strong_preds[strong_mask],
+                filenames_strong,
+                self.encoder,
+                median_filter=self.hparams["training"]["median_window"],
+                thresholds=list(self.val_buffer_strong.keys()),
             )
+
+            self.val_scores_postprocessed_buffer_strong.update(
+                scores_postprocessed_strong
+            )
+            for th in self.val_buffer_strong.keys():
+                self.val_buffer_strong[th] = pd.concat(
+                    [self.val_buffer_strong[th], decoded_strong[th]], ignore_index=True
+                )
+
+        # total supervised loss
+        total_loss = loss_strong + loss_weak
+        self.log("val/total_loss", total_loss, prog_bar=True, sync_dist=True)
 
         return
 
@@ -288,7 +363,9 @@ class SED(pl.LightningModule):
             torch.Tensor, the objective metric to be used to choose the best model from for example.
         """
 
-        # * synth val dataset
+        weak_f1_macro = self.get_weak_f1_seg_macro.compute()
+
+        # * strong val dataset
         ground_truth = sed_scores_eval.io.read_ground_truth_events(
             self.hparams["data"]["synth_val_tsv"]
         )
@@ -298,11 +375,11 @@ class SED(pl.LightningModule):
         if self.fast_dev_run:
             ground_truth = {
                 audio_id: ground_truth[audio_id]
-                for audio_id in self.val_scores_postprocessed_buffer_synth
+                for audio_id in self.val_scores_postprocessed_buffer_strong
             }
             audio_durations = {
                 audio_id: audio_durations[audio_id]
-                for audio_id in self.val_scores_postprocessed_buffer_synth
+                for audio_id in self.val_scores_postprocessed_buffer_strong
             }
         else:
             # * drop audios without events
@@ -313,7 +390,7 @@ class SED(pl.LightningModule):
                 audio_id: audio_durations[audio_id] for audio_id in ground_truth.keys()
             }
         psds1_sed_scores_eval = compute_psds_from_scores(
-            self.val_scores_postprocessed_buffer_synth,
+            self.val_scores_postprocessed_buffer_strong,
             ground_truth,
             audio_durations,
             dtc_threshold=0.7,
@@ -324,53 +401,67 @@ class SED(pl.LightningModule):
             # save_dir=os.path.join(save_dir, "", "scenario1"),
         )
         intersection_f1_macro = compute_per_intersection_macro_f1(
-            self.val_buffer_synth,
+            self.val_buffer_strong,
             self.hparams["data"]["synth_val_tsv"],
             self.hparams["data"]["synth_val_dur"],
         )
-        synth_event_macro = log_sedeval_metrics(
-            self.val_buffer_synth[0.5],
+        sed_eval_metrics = log_sedeval_metrics(
+            self.val_buffer_strong[0.5],
             self.hparams["data"]["synth_val_tsv"],
-        )[0]
+        )
+        strong_event_macro = sed_eval_metrics[0]
+        strong_segment_macro = sed_eval_metrics[2]
 
-        obj_metric_synth_type = self.hparams["training"].get("obj_metric_synth_type")
-        if obj_metric_synth_type is None:
-            synth_metric = psds1_sed_scores_eval
-        elif obj_metric_synth_type == "event":
-            synth_metric = synth_event_macro
-        elif obj_metric_synth_type == "intersection":
-            synth_metric = intersection_f1_macro
-        elif obj_metric_synth_type == "psds":
-            synth_metric = psds1_sed_scores_eval
+        obj_metric_strong_type = self.hparams["training"].get("obj_metric_strong_type")
+        if obj_metric_strong_type is None:
+            strong_metric = psds1_sed_scores_eval
+        elif obj_metric_strong_type == "event":
+            strong_metric = strong_event_macro
+        elif obj_metric_strong_type == "intersection":
+            strong_metric = intersection_f1_macro
+        elif obj_metric_strong_type == "psds":
+            strong_metric = psds1_sed_scores_eval
         else:
             raise NotImplementedError(
-                f"obj_metric_synth_type: {obj_metric_synth_type} not implemented."
+                f"obj_metric_strong_type: {obj_metric_strong_type} not implemented."
             )
 
-        obj_metric = torch.tensor(synth_metric)
+        obj_metric = torch.tensor(weak_f1_macro.item() + strong_metric)
 
         self.log("val/obj_metric", obj_metric, prog_bar=True, sync_dist=True)
+        self.log("val/weak/macro_F1", weak_f1_macro, prog_bar=True)
         self.log(
-            "val/synth/psds1_sed_scores_eval",
+            "val/strong/psds1_sed_scores_eval",
             psds1_sed_scores_eval,
             prog_bar=True,
             sync_dist=True,
         )
         self.log(
-            "val/synth/intersection_f1_macro",
+            "val/strong/intersection_f1_macro",
             intersection_f1_macro,
             prog_bar=True,
             sync_dist=True,
         )
         self.log(
-            "val/synth/event_f1_macro", synth_event_macro, prog_bar=True, sync_dist=True
+            "val/strong/event_f1_macro",
+            strong_event_macro,
+            prog_bar=True,
+            sync_dist=True,
+        )
+        self.log(
+            "val/strong/segment_f1_macro",
+            strong_segment_macro,
+            prog_bar=True,
+            sync_dist=True,
         )
 
         # * free the buffers
-        self.val_buffer_synth = {
+        self.val_buffer_strong = {
             k: pd.DataFrame() for k in self.hparams["training"]["val_thresholds"]
         }
-        self.val_scores_postprocessed_buffer_synth = {}
+        self.val_scores_postprocessed_buffer_strong = {}
+
+        self.get_weak_f1_seg_macro.reset()
 
         return obj_metric
 
@@ -390,7 +481,7 @@ class SED(pl.LightningModule):
         audio, labels, _, filenames = batch
 
         features = self.mel_spec(audio)
-        preds = self.sed(self.scaler(self.take_log(features)))
+        preds, _ = self.sed(self.scaler(self.take_log(features)))
 
         if not self.evaluation:
             loss = self.loss_fn(preds, labels)
@@ -508,13 +599,15 @@ class SED(pl.LightningModule):
                 save_dir=os.path.join(save_dir, "", "scenario2"),
             )
 
-            event_macro = log_sedeval_metrics(
+            sed_eval_metrics = log_sedeval_metrics(
                 self.decoded_05_buffer,
                 self.hparams["data"]["test_tsv"],
                 os.path.join(save_dir, ""),
-            )[0]
+            )
+            event_macro = sed_eval_metrics[0]
+            segment_macro = sed_eval_metrics[2]
 
-            # synth dataset
+            # strong dataset
             intersection_f1_macro = compute_per_intersection_macro_f1(
                 {"0.5": self.decoded_05_buffer},
                 self.hparams["data"]["test_tsv"],
@@ -526,6 +619,7 @@ class SED(pl.LightningModule):
                 "test/psds1_sed_scores_eval": psds1_sed_scores_eval,
                 "test/psds2_psds_eval": psds2_psds_eval,
                 "test/psds2_sed_scores_eval": psds2_sed_scores_eval,
+                "test/segment_f1_macro": segment_macro,
                 "test/event_f1_macro": event_macro,
                 "test/intersection_f1_macro": intersection_f1_macro,
             }
@@ -543,7 +637,7 @@ class SED(pl.LightningModule):
     def train_dataloader(self):
         self.train_loader = torch.utils.data.DataLoader(
             self.train_data,
-            batch_size=self.hparams["training"]["batch_size"],
+            batch_sampler=self.train_sampler,
             num_workers=self.num_workers,
         )
         return self.train_loader
@@ -571,7 +665,7 @@ class SED(pl.LightningModule):
     def forward(self, x):
         features = self.mel_spec(x)
         features = features.unsqueeze(0)
-        preds = self.sed(self.scaler(self.take_log(features)))
+        preds, _ = self.sed(self.scaler(self.take_log(features)))
         return preds
 
 
