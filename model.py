@@ -116,8 +116,7 @@ class BidirectionalGRU(nn.Module):
 class AutoPool(nn.Module):
     def __init__(self, input_dim, n_classes):
         super(AutoPool, self).__init__()
-        # Initialize the alpha parameter as a learnable parameter matrix
-        # with shape (n_classes, input_dim)
+
         self.alpha = nn.Parameter(torch.randn(n_classes))
         self.dense = nn.Linear(input_dim, n_classes)
 
@@ -134,9 +133,8 @@ class AutoPool(nn.Module):
         x = self.dense(x) # [bs, frames, nclass]
         
         # Apply the softmax function to alpha to get weights for each class
-        weights = torch.softmax(self.alpha, dim=0).unsqueeze(0).unsqueeze(1)
+        weights = torch.softmax(self.alpha, dim=0).unsqueeze(0).unsqueeze(-1).permute(0, 2, 1)
         
-        # Multiply each frame by the learned weights and sum over the frames
         return torch.sum(x * weights, dim=1)
 
 # ! CRNN
