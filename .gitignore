@@ -6,3 +6,4 @@ lightning_logs/
 .ruff_cache/
 .env
 notebooks/
+.pytest_cache/

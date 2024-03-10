@@ -20,3 +20,4 @@ dvc-render==0.6.0
 dvc-studio-client==0.15.0
 dvc-task==0.3.0
 dvclive==3.1.0
+randomname==0.2.1
