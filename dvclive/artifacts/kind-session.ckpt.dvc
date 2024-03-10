@@ -1,0 +1,5 @@
+outs:
+- md5: 6be98019ac69912824f52f72a1c94aba
+  size: 13106669
+  hash: md5
+  path: kind-session.ckpt
