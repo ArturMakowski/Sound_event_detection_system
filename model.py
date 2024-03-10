@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import torchinfo
 import yaml
+import torch.nn.functional as F
 
 
 # ! CNN
@@ -130,10 +131,19 @@ class AutoPool(nn.Module):
             Tensor: aggregated output of size (batch_size, n_classes)
         """
         
-        # Apply the softmax function to alpha to get weights for each class
-        weights = torch.softmax(self.alpha, dim=0).unsqueeze(0).unsqueeze(-1).permute(0, 2, 1)
+        max_pooling = torch.max(x, dim=1, keepdim=True).values
         
-        return torch.sum(x * weights, dim=1)
+        # Apply mean pooling
+        mean_pooling = torch.mean(x, dim=1, keepdim=True)
+        
+        # Compute the softmax of alpha to ensure it is positive
+        alpha_softmax = F.softplus(self.alpha)
+        
+        # Interpolate between mean and max pooling using the softmax of alpha
+        auto_pooling = (torch.exp(alpha_softmax * mean_pooling) + torch.exp(alpha_softmax * max_pooling)) / \
+                       (torch.exp(alpha_softmax) + 1)
+        
+        return auto_pooling.squeeze(1)
 
 # ! CRNN
 class CRNN(nn.Module):
