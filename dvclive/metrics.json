@@ -1,33 +1,36 @@
 {
     "train": {
-        "loss_strong": 0.12431906908750534,
-        "loss_weak": 0.016940917819738388,
-        "total_loss": 0.14125998318195343,
+        "loss_strong": 0.12753276526927948,
+        "loss_weak": 0.018558649346232414,
+        "total_loss": 0.14609141647815704,
         "step": 5880.0,
         "lr": 0.0010000000474974513
     },
     "epoch": 100,
     "step": 5900,
     "val": {
-        "synth": {
-            "loss_strong": 0.11079329252243042,
-            "loss_weak": 0.12036793678998947,
-            "psds1_sed_scores_eval": 0.24690118643886497,
-            "intersection_f1_macro": 0.5371080334065074,
-            "event_f1_macro": 0.34061309695243835
+        "strong": {
+            "loss_strong": 0.10716547816991806,
+            "psds1_sed_scores_eval": 0.26489008299086214,
+            "intersection_f1_macro": 0.5649546655151358,
+            "event_f1_macro": 0.35933440923690796,
+            "segment_f1_macro": 0.7086608409881592
         },
-        "obj_metric": 1.3787334854481332,
         "weak": {
-            "macro_F1": 0.841625452041626
-        }
+            "loss_weak": 0.10830338299274445,
+            "macro_F1": 0.828643798828125
+        },
+        "total_loss": 0.195529967546463,
+        "obj_metric": 1.3935984643432608
     },
     "test": {
-        "psds1_psds_eval": 0.3632541359243902,
-        "psds1_sed_scores_eval": 0.37686497019379245,
-        "psds2_psds_eval": 0.5765774680374401,
-        "psds2_sed_scores_eval": 0.6053404851349093,
-        "event_f1_macro": 0.4164974093437195,
-        "intersection_f1_macro": 0.6480811429501431,
-        "loss": 0.12357500940561295
+        "psds1_psds_eval": 0.33272817421307255,
+        "psds1_sed_scores_eval": 0.3436184387932509,
+        "psds2_psds_eval": 0.553258647837857,
+        "psds2_sed_scores_eval": 0.5808132125326978,
+        "segment_f1_macro": 0.7502013444900513,
+        "event_f1_macro": 0.360954225063324,
+        "intersection_f1_macro": 0.6220883899373968,
+        "loss": 0.1261802464723587
     }
 }

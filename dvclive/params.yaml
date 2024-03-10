@@ -19,7 +19,7 @@ training:
   deterministic: false
   precision: 32
   mixup: soft
-  obj_metric_synth_type: intersection
+  obj_metric_strong_type: intersection
   enable_progress_bar: true
   weak_split: 0.9
 scaler:
@@ -32,21 +32,15 @@ scaler:
 data:
   synth_folder: 
     /content/drive/MyDrive/DESED_dataset/dcase_synth/audio/train/synthetic21_train/soundscapes_16k/
-  synth_folder_44k: 
-    /content/drive/MyDrive/DESED_dataset/dcase_synth/audio/train/synthetic21_train/soundscapes/
   synth_tsv: 
     /content/drive/MyDrive/DESED_dataset/dcase_synth/metadata/train/synthetic21_train/soundscapes.tsv
   strong_folder: /content/drive/MyDrive/DESED_dataset/audio/train/strong_label_real_16k/
-  strong_folder_44k: /content/drive/MyDrive/DESED_dataset/audio/train/strong_label_real/
   strong_tsv: /content/drive/MyDrive/DESED_dataset/metadata/train/audioset_strong.tsv
   weak_folder: /content/drive/MyDrive/DESED_dataset/audio/train/weak_16k/
-  weak_folder_44k: /content/drive/MyDrive/DESED_dataset/audio/train/weak/
   weak_tsv: /content/drive/MyDrive/DESED_dataset/metadata/train/weak.tsv
   unlabeled_folder: /content/drive/MyDrive/DESED_dataset/audio/train/unlabel_in_domain_16k/
-  unlabeled_folder_44k: /content/drive/MyDrive/DESED_dataset/audio/train/unlabel_in_domain/
   unlabeled_tsv: /content/drive/MyDrive/DESED_dataset/metadata/train/unlabel_in_domain.tsv
   synth_val_folder: /content/drive/MyDrive/DESED_dataset/audio/validation/validation_16k/
-  synth_val_folder_44k: /content/drive/MyDrive/DESED_dataset/audio/validation/validation/
   synth_val_tsv: /content/drive/MyDrive/DESED_dataset/metadata/validation/validation.tsv
   synth_val_dur: 
     /content/drive/MyDrive/DESED_dataset/metadata/validation/validation_durations.tsv
@@ -54,7 +48,6 @@ data:
   test_tsv: /content/drive/MyDrive/DESED_dataset/metadata/test/public.tsv
   test_dur: /content/drive/MyDrive/DESED_dataset/metadata/test/test_durations.tsv
   eval_folder: /content/drive/MyDrive/DESED_dataset/audio/eval21_16k
-  eval_folder_44k: /content/drive/MyDrive/DESED_dataset/audio/eval21
   audio_max_len: 10
   fs: 16000
   net_subsample: 1
@@ -126,3 +119,4 @@ net:
   dropout_recurrent: 0
   attention: true
 log_dir: ./exp/
+model_name: kind-session
