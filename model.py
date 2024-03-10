@@ -112,6 +112,32 @@ class BidirectionalGRU(nn.Module):
         recurrent, _ = self.rnn(input_feat)
         return recurrent
 
+# ! AutoPool
+class AutoPool(nn.Module):
+    def __init__(self, input_dim, n_classes):
+        super(AutoPool, self).__init__()
+        # Initialize the alpha parameter as a learnable parameter matrix
+        # with shape (n_classes, input_dim)
+        self.alpha = nn.Parameter(torch.randn(n_classes))
+        self.dense = nn.Linear(input_dim, n_classes)
+
+    def forward(self, x):
+        """
+        Forward step of the AutoPool layer.
+        
+        Args:
+            x (Tensor): input batch of size (batch_size, n_frames, n_features)
+        
+        Returns:
+            Tensor: aggregated output of size (batch_size, n_classes)
+        """
+        x = self.dense(x) # [bs, frames, nclass]
+        
+        # Apply the softmax function to alpha to get weights for each class
+        weights = torch.softmax(self.alpha, dim=0).unsqueeze(0).unsqueeze(1)
+        
+        # Multiply each frame by the learned weights and sum over the frames
+        return torch.sum(x * weights, dim=1)
 
 # ! CRNN
 class CRNN(nn.Module):
@@ -125,7 +151,7 @@ class CRNN(nn.Module):
         n_RNN_cell=128,
         n_layers_RNN=2,
         dropout_recurrent=0,
-        attention=True,
+        agg_type='autopool',
         **kwargs,
     ):
         """
@@ -136,13 +162,11 @@ class CRNN(nn.Module):
             n_class: int, number of classes
             activation: str, activation function
             dropout: float, dropout
-            train_cnn: bool, training cnn layers
             rnn_type: str, rnn type
             n_RNN_cell: int, RNN nodes
             n_layer_RNN: int, number of RNN layers
             dropout_recurrent: float, recurrent layers dropout
-            cnn_integration: bool, integration of cnn
-            freeze_bn:
+            agg_type: str, aggregation type (mean, attention, autopool)
             **kwargs: keywords arguments for CNN.
         """
         super(CRNN, self).__init__()
@@ -158,7 +182,9 @@ class CRNN(nn.Module):
             **kwargs,
         )
 
-        self.attention = attention
+        self.agg_type = agg_type
+        
+        
         # n_in_channel,
         # activation="Relu",
         # conv_dropout=0,
@@ -184,9 +210,16 @@ class CRNN(nn.Module):
         self.dense = nn.Linear(n_RNN_cell * 2, nclass)
         self.sigmoid = nn.Sigmoid()
 
-        if self.attention:
+        if self.agg_type == "attention":
             self.dense_softmax = nn.Linear(n_RNN_cell * 2, nclass)
             self.softmax = nn.Softmax(dim=-1)
+        elif self.agg_type == "autopool":
+            self.autopool_layer = AutoPool(n_RNN_cell * 2, nclass)
+        elif self.agg_type == "mean":
+            pass
+        else:
+            NotImplementedError("Only mean, attention and autopool supported for CRNN for now")
+            
 
     def forward(self, x, pad_mask=None, embeddings=None):
         
@@ -197,7 +230,6 @@ class CRNN(nn.Module):
         x = self.cnn(x)
         bs, chan, frames, freq = x.size()
         
-
         if freq != 1:
             warnings.warn(
                 f"Output shape is: {(bs, frames, chan * freq)}, from {freq} staying freq"
@@ -214,13 +246,16 @@ class CRNN(nn.Module):
         strong = self.dense(x)  # [bs, frames, nclass]
         strong = self.sigmoid(strong)
 
-        if self.attention:
+        if self.agg_type == "attention":
             sof = self.dense_softmax(x)  # [bs, frames, nclass]
             sof = self.softmax(sof)
             sof = torch.clamp(sof, min=1e-7, max=1)
             weak = (strong * sof).sum(1) / sof.sum(1)  # [bs, nclass]
-        else:
+        elif self.agg_type == "autopool":
+            weak = self.autopool_layer(x)  # [bs, nclass]
+        elif self.agg_type == "mean":
             weak = strong.mean(1)
+            
         return strong.transpose(1, 2), weak
 
 
