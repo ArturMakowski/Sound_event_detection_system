@@ -115,7 +115,7 @@ class BidirectionalGRU(nn.Module):
 
 # ! AutoPool
 class AutoPool(nn.Module):
-    def __init__(self, input_dim, n_classes):
+    def __init__(self, n_classes):
         super(AutoPool, self).__init__()
 
         self.alpha = nn.Parameter(torch.randn(n_classes))
@@ -125,25 +125,16 @@ class AutoPool(nn.Module):
         Forward step of the AutoPool layer.
         
         Args:
-            x (Tensor): input batch of size (batch_size, n_frames, n_features)
+            x (Tensor): input batch of size (batch_size, n_frames, n_classes)
         
         Returns:
             Tensor: aggregated output of size (batch_size, n_classes)
         """
         
-        max_pooling = torch.max(x, dim=1, keepdim=True).values
-        
-        # Apply mean pooling
-        mean_pooling = torch.mean(x, dim=1, keepdim=True)
-        
-        # Compute the softmax of alpha to ensure it is positive
-        alpha_softmax = F.softplus(self.alpha)
-        
-        # Interpolate between mean and max pooling using the softmax of alpha
-        auto_pooling = (torch.exp(alpha_softmax * mean_pooling) + torch.exp(alpha_softmax * max_pooling)) / \
-                       (torch.exp(alpha_softmax) + 1)
-        
-        return auto_pooling.squeeze(1)
+        # Expand kernel to match the input shape and apply softmax
+        weights = F.softmax(self.alpha.unsqueeze(0).unsqueeze(1), dim=-1)
+        # Perform weighted sum (auto-pooling)
+        return torch.sum(x * weights, dim=1)/x.size(1)
 
 # ! CRNN
 class CRNN(nn.Module):
@@ -220,7 +211,7 @@ class CRNN(nn.Module):
             self.dense_softmax = nn.Linear(n_RNN_cell * 2, nclass)
             self.softmax = nn.Softmax(dim=-1)
         elif self.agg_type == "autopool":
-            self.autopool_layer = AutoPool(n_RNN_cell * 2, nclass)
+            self.autopool_layer = AutoPool(nclass)
         elif self.agg_type == "mean":
             pass
         else:
