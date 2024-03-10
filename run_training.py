@@ -3,13 +3,14 @@ import argparse
 import pandas as pd
 import torch
 import yaml
+import os
 
 from desed_task.dataio import ConcatDatasetBatchSampler
 from desed_task.dataio.datasets import StronglyAnnotatedSet, WeakSet, UnlabeledSet
 from model import CRNN
 from encoder import ManyHotEncoder
 from desed_task.utils.schedulers import ExponentialWarmup
-
+import randomname
 from trainer import SED
 
 import pytorch_lightning as pl
@@ -174,6 +175,15 @@ def single_run(
         logger.log_hyperparams(config)
         print(f"experiment dir: {logger.log_dir}")
 
+        def generate_unique_model_name(checkpoint_dir):
+            while True:
+                model_name = randomname.get_name()
+                # Check if there is any file that starts with the model_name
+                if not any(f.startswith(model_name) for f in os.listdir(checkpoint_dir)):
+                    return model_name
+        model_name = generate_unique_model_name("dvclive/artifacts/")
+        config.update({"model_name": model_name})
+        
         if callbacks is None:
             callbacks = [
                 EarlyStopping(
@@ -184,6 +194,7 @@ def single_run(
                 ),
                 ModelCheckpoint(
                     logger.log_dir,
+                    filename=model_name,
                     monitor="val/obj_metric",
                     save_top_k=1,
                     mode="max",
