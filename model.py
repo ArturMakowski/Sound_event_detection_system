@@ -118,7 +118,6 @@ class AutoPool(nn.Module):
         super(AutoPool, self).__init__()
 
         self.alpha = nn.Parameter(torch.randn(n_classes))
-        self.dense = nn.Linear(input_dim, n_classes)
 
     def forward(self, x):
         """
@@ -130,7 +129,6 @@ class AutoPool(nn.Module):
         Returns:
             Tensor: aggregated output of size (batch_size, n_classes)
         """
-        x = self.dense(x) # [bs, frames, nclass]
         
         # Apply the softmax function to alpha to get weights for each class
         weights = torch.softmax(self.alpha, dim=0).unsqueeze(0).unsqueeze(-1).permute(0, 2, 1)
@@ -250,7 +248,7 @@ class CRNN(nn.Module):
             sof = torch.clamp(sof, min=1e-7, max=1)
             weak = (strong * sof).sum(1) / sof.sum(1)  # [bs, nclass]
         elif self.agg_type == "autopool":
-            weak = self.autopool_layer(x)  # [bs, nclass]
+            weak = self.autopool_layer(strong)  # [bs, nclass]
         elif self.agg_type == "mean":
             weak = strong.mean(1)
             
