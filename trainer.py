@@ -542,7 +542,7 @@ class SED(pl.LightningModule):
 
         sed_eval_metrics_teacher = log_sedeval_metrics(
             self.val_buffer_teacher_strong[0.5], self.hparams["data"]["synth_val_tsv"],
-        )[0]
+        )
         strong_event_macro_teacher = sed_eval_metrics_teacher[0]
         strong_segment_macro_teacher = sed_eval_metrics_teacher[2]
 
