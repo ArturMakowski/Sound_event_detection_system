@@ -5,8 +5,8 @@ training:
   batch_size_val: 64
   n_epochs_warmup: 50
   num_workers: 8
-  n_epochs: 100
-  early_stop_patience: 100
+  n_epochs: 200
+  early_stop_patience: 200
   accumulate_batches: 1
   gradient_clip: 0.0
   median_window: 7
@@ -22,6 +22,9 @@ training:
   obj_metric_strong_type: intersection
   enable_progress_bar: true
   weak_split: 0.9
+  consistency_loss: mse
+  ema_factor: 0.999
+  const_max: 2
 scaler:
   statistic: instance
   normtype: minmax
@@ -119,4 +122,4 @@ net:
   dropout_recurrent: 0
   attention: true
 log_dir: ./exp/
-model_name: kind-session
+model_name: critical-bond

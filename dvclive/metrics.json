@@ -1,36 +1,75 @@
 {
     "train": {
-        "loss_strong": 0.12753276526927948,
-        "loss_weak": 0.018558649346232414,
-        "total_loss": 0.14609141647815704,
-        "step": 5880.0,
+        "student": {
+            "loss_strong": 0.05985254421830177,
+            "loss_weak": 0.008003291673958302,
+            "loss_total_supervised": 0.0678558349609375,
+            "loss_consistency": 0.010300928726792336
+        },
+        "teacher": {
+            "loss_strong": 0.049276262521743774,
+            "loss_weak": 0.004881661385297775
+        },
+        "total_loss": 0.07815676182508469,
+        "step": 11800.0,
         "lr": 0.0010000000474974513
     },
-    "epoch": 100,
-    "step": 5900,
+    "epoch": 200,
+    "step": 11800,
     "val": {
         "strong": {
-            "loss_strong": 0.10716547816991806,
-            "psds1_sed_scores_eval": 0.26489008299086214,
-            "intersection_f1_macro": 0.5649546655151358,
-            "event_f1_macro": 0.35933440923690796,
-            "segment_f1_macro": 0.7086608409881592
+            "student": {
+                "loss_strong": 0.10504857450723648,
+                "psds1_sed_scores_eval": 0.28800569271590726,
+                "intersection_f1_macro": 0.5929568031806678,
+                "event_f1_macro": 0.4013557434082031,
+                "segment_f1_macro": 0.7294195890426636
+            },
+            "teacher": {
+                "loss_strong": 0.09708187729120255,
+                "intersection_f1_macro": 0.6071171810623086,
+                "event_f1_macro": 0.4198894202709198,
+                "segment_f1_macro": 0.7576078176498413
+            }
         },
         "weak": {
-            "loss_weak": 0.10830338299274445,
-            "macro_F1": 0.828643798828125
+            "student": {
+                "loss_weak": 0.13067057728767395,
+                "macro_F1": 0.8217555284500122
+            },
+            "teacher": {
+                "loss_weak": 0.10795927792787552,
+                "macro_F1": 0.8486087918281555
+            }
         },
-        "total_loss": 0.195529967546463,
-        "obj_metric": 1.3935984643432608
+        "student": {
+            "total_loss": 0.234989196062088
+        },
+        "teacher": {
+            "total_loss": 0.19683828949928284
+        },
+        "obj_metric": 1.41471233163068
     },
     "test": {
-        "psds1_psds_eval": 0.33272817421307255,
-        "psds1_sed_scores_eval": 0.3436184387932509,
-        "psds2_psds_eval": 0.553258647837857,
-        "psds2_sed_scores_eval": 0.5808132125326978,
-        "segment_f1_macro": 0.7502013444900513,
-        "event_f1_macro": 0.360954225063324,
-        "intersection_f1_macro": 0.6220883899373968,
-        "loss": 0.1261802464723587
+        "student": {
+            "psds1_psds_eval": 0.3498883565378522,
+            "psds1_sed_scores_eval": 0.36319721097139035,
+            "psds2_psds_eval": 0.590818834201357,
+            "psds2_sed_scores_eval": 0.6199452616443962,
+            "segment_f1_macro": 0.7912905812263489,
+            "event_f1_macro": 0.45579347014427185,
+            "intersection_f1_macro": 0.6680842126679689,
+            "loss_strong": 0.11297040432691574
+        },
+        "teacher": {
+            "psds1_psds_eval": 0.3592396990470259,
+            "psds1_sed_scores_eval": 0.36990037731841446,
+            "psds2_psds_eval": 0.6181990206820722,
+            "psds2_sed_scores_eval": 0.6436038924028071,
+            "segment_f1_macro": 0.7963300347328186,
+            "event_f1_macro": 0.46681076288223267,
+            "intersection_f1_macro": 0.6723003251612543,
+            "loss_strong": 0.11076945066452026
+        }
     }
 }

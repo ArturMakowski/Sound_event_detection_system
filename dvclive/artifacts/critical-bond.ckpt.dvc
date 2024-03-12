@@ -1,0 +1,5 @@
+outs:
+- md5: 4f62b53895e4370f063df72888c4db33
+  size: 17307585
+  hash: md5
+  path: critical-bond.ckpt
