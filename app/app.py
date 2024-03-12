@@ -194,7 +194,7 @@ def main() -> None:
 
     try:
         vis, audio, fs = inference(
-            idx, model_path="../dvclive/artifacts/epoch=96-step=5723.ckpt"
+            idx, model_path="../dvclive/artifacts/critical-bond.ckpt"
         )
     except IndexError:
         st.error("Invalid index. Please enter a valid index.")
