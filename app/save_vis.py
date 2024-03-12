@@ -16,7 +16,7 @@ def save_visualizations(
 ) -> None:
     config = load_config()
     sed, encoder = initialize_sed(config)
-    sed = load_model(sed, model_path="../dvclive/artifacts/epoch=90-step=5915.ckpt")
+    sed = load_model(sed, model_path="../dvclive/artifacts/critical-bond.ckpt")
     dataset_strong = create_dataset(config, encoder)
     pbar = tqdm(enumerate(dataset_strong), total=len(dataset_strong))
     for idx, item in pbar:
