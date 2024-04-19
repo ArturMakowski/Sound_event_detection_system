@@ -20,6 +20,9 @@ training:
   obj_metric_strong_type: intersection
   enable_progress_bar: True
   weak_split: 0.9 # split weak data in train and validation
+  consistency_loss: mse
+  ema_factor: 0.999
+  const_max: 2
 scaler:
   statistic: instance # instance or dataset-wide statistic
   normtype: minmax # minmax or standard or mean normalization
