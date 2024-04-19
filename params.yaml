@@ -4,8 +4,8 @@ training:
   batch_size_val: 64
   n_epochs_warmup: 50 # num epochs used for exponential warmup
   num_workers: 8 # change according to your cpu
-  n_epochs: 100 # max num epochs
-  early_stop_patience: 100 # Same as number of epochs by default, so no early stopping used
+  n_epochs: 150 # max num epochs
+  early_stop_patience: 150 # Same as number of epochs by default, so no early stopping used
   accumulate_batches: 1
   gradient_clip: 0. # 0 no gradient clipping
   median_window: 7 # length of median filter used to smooth prediction in inference (nb of output frames)
@@ -16,7 +16,7 @@ training:
   seed: 42
   deterministic: False
   precision: 32
-  mixup: soft # Soft mixup gives the ratio of the mix to the labels, hard mixup gives a 1 to every label present.
+  mixup: hard # Soft mixup gives the ratio of the mix to the labels, hard mixup gives a 1 to every label present.
   obj_metric_strong_type: intersection
   enable_progress_bar: True
   weak_split: 0.9 # split weak data in train and validation
