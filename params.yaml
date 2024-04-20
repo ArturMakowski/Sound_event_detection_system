@@ -16,7 +16,7 @@ training:
   seed: 42
   deterministic: False
   precision: 32
-  mixup: hard # Soft mixup gives the ratio of the mix to the labels, hard mixup gives a 1 to every label present.
+  mixup: soft # Soft mixup gives the ratio of the mix to the labels, hard mixup gives a 1 to every label present.
   obj_metric_strong_type: intersection
   enable_progress_bar: True
   weak_split: 0.9 # split weak data in train and validation

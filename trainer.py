@@ -13,7 +13,7 @@ import torchmetrics
 import yaml
 from torchaudio.transforms import AmplitudeToDB, MelSpectrogram
 
-from desed_task.data_augm import mixup, filt_aug_prototype, freq_mask, add_noise
+from desed_task.data_augm import mixup, filt_aug_prototype, freq_mask
 from desed_task.evaluation.evaluation_measures import (
     compute_per_intersection_macro_f1,
     compute_psds_from_operating_points,
@@ -300,11 +300,11 @@ class SED(pl.LightningModule):
                 features[strong_mask], labels[strong_mask], mixup_label_type=mixup_type
             )
 
-        if 0.3 > random.random():
+        if 0.2 > random.random():
             features[weak_mask] = filt_aug_prototype(features[weak_mask])
             features[strong_mask] = filt_aug_prototype(features[strong_mask])
 
-        if 0.3 > random.random():
+        if 0.2 > random.random():
             features[weak_mask] = freq_mask(features[weak_mask])
             features[strong_mask] = freq_mask(features[strong_mask])
 
@@ -323,7 +323,7 @@ class SED(pl.LightningModule):
 
         with torch.no_grad():
             strong_preds_teacher, weak_preds_teacher = self.sed_teacher(
-                self.scaler(self.take_log(add_noise(features, 20)))
+                self.scaler(self.take_log(features))
             )
             loss_strong_teacher = self.supervised_loss(
                 strong_preds_teacher[strong_mask], labels[strong_mask]
