@@ -116,7 +116,7 @@ def single_run(
             encoder,
             pad_to=config["data"]["audio_max_len"],
         )
-        
+
         strong_df_val = pd.read_csv(config["data"]["synth_val_tsv"], sep="\t")
         strong_val = StronglyAnnotatedSet(
             config["data"]["synth_val_folder"],
@@ -133,7 +133,7 @@ def single_run(
             pad_to=config["data"]["audio_max_len"],
             return_filename=True,
         )
-        
+
         if real_data:
             synth_set = torch.utils.data.ConcatDataset([real_set, synth_set])
 
@@ -145,7 +145,7 @@ def single_run(
         batch_sampler = ConcatDatasetBatchSampler(samplers, batch_sizes)
 
         valid_dataset = torch.utils.data.ConcatDataset([strong_val, weak_val])
-        
+
         #####* training params and optimizers #####
         epoch_len = min(
             [
@@ -179,11 +179,14 @@ def single_run(
             while True:
                 model_name = randomname.get_name()
                 # Check if there is any file that starts with the model_name
-                if not any(f.startswith(model_name) for f in os.listdir(checkpoint_dir)):
+                if not any(
+                    f.startswith(model_name) for f in os.listdir(checkpoint_dir)
+                ):
                     return model_name
+
         model_name = generate_unique_model_name("dvclive/artifacts/")
         config.update({"model_name": model_name})
-        
+
         if callbacks is None:
             callbacks = [
                 EarlyStopping(
