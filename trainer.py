@@ -976,10 +976,15 @@ class SED(pl.LightningModule):
         )
         return self.test_loader
 
-    def forward(self, x):
+    def forward(self, x, model="student"):
         features = self.mel_spec(x)
         features = features.unsqueeze(0)
-        preds, _ = self.sed_student(self.scaler(self.take_log(features)))
+        if model == "student":
+            preds, _ = self.sed_student(self.scaler(self.take_log(features)))
+        elif model == "teacher":
+            preds, _ = self.sed_teacher(self.scaler(self.take_log(features)))
+        else:
+            raise NotImplementedError("Only student and teacher models are available")
         return preds
 
 

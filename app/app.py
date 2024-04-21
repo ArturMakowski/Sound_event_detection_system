@@ -98,6 +98,7 @@ def make_prediction(
     encoder: ManyHotEncoder,
     idx: int,
     print_df: bool = False,
+    model: str = "student",
 ) -> Tuple[
     sed_vis.visualization.EventListVisualizer, dcase_util.containers.AudioContainer
 ]:
@@ -116,7 +117,9 @@ def make_prediction(
         tuple: The visualizer for the event list and the audio container.
     """
     preds = batched_decode_preds(
-        sed(dataset_strong[idx][0]), dataset_strong[idx][3], encoder
+        sed.forward(dataset_strong[idx][0], model=model),
+        dataset_strong[idx][3],
+        encoder,
     )
     preds[2][0.5][["onset", "offset", "event_label"]].to_csv(
         "preds.tsv", index=False, sep="\t"
@@ -165,6 +168,7 @@ def inference(
     idx: int,
     model_path: str = "../dvclive/artifacts/epoch=68-step=7314.ckpt",
     print_df: bool = False,
+    **kwargs: str,
 ) -> Tuple[sed_vis.visualization.EventListVisualizer, np.ndarray, int]:
     """
     Performs inference on a sample from the dataset.
@@ -182,7 +186,7 @@ def inference(
     sed = load_model(sed, model_path)
     dataset_strong = create_dataset(config, encoder)
     vis, audio_container = make_prediction(
-        sed, dataset_strong, config, encoder, idx, print_df
+        sed, dataset_strong, config, encoder, idx, print_df, **kwargs
     )
     return vis, audio_container.data, audio_container.fs
 
@@ -194,7 +198,7 @@ def main() -> None:
 
     try:
         vis, audio, fs = inference(
-            idx, model_path="../dvclive/artifacts/critical-bond.ckpt"
+            idx, model_path="../dvclive/artifacts/critical-bond.ckpt", model="teacher"
         )
     except IndexError:
         st.error("Invalid index. Please enter a valid index.")
