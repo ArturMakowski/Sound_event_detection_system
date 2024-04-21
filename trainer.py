@@ -946,9 +946,7 @@ class SED(pl.LightningModule):
             self.log(key, results[key], prog_bar=True, logger=True, sync_dist=True)
 
     def configure_optimizers(self):
-        if not self.scheduler:
-            return [self.opt], [self.scheduler]
-        return None
+        return [self.opt], [self.scheduler]
 
     def train_dataloader(self):
         self.train_loader = torch.utils.data.DataLoader(
