@@ -299,17 +299,19 @@ class SED(pl.LightningModule):
             features[strong_mask], labels[strong_mask] = mixup(
                 features[strong_mask], labels[strong_mask], mixup_label_type=mixup_type
             )
+            
+        features = self.take_log(features)
 
-        if 0.2 > random.random():
+        if 0.3 > random.random():
             features[weak_mask] = filt_aug_prototype(features[weak_mask])
             features[strong_mask] = filt_aug_prototype(features[strong_mask])
 
-        if 0.2 > random.random():
+        if 0.3 > random.random():
             features[weak_mask] = freq_mask(features[weak_mask])
             features[strong_mask] = freq_mask(features[strong_mask])
 
         strong_preds_student, weak_preds_student = self.sed_student(
-            self.scaler(self.take_log(features))
+            self.scaler(features)
         )
 
         loss_strong = self.supervised_loss(
@@ -323,7 +325,7 @@ class SED(pl.LightningModule):
 
         with torch.no_grad():
             strong_preds_teacher, weak_preds_teacher = self.sed_teacher(
-                self.scaler(self.take_log(features))
+                self.scaler(features)
             )
             loss_strong_teacher = self.supervised_loss(
                 strong_preds_teacher[strong_mask], labels[strong_mask]
