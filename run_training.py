@@ -133,11 +133,17 @@ def single_run(
             pad_to=config["data"]["audio_max_len"],
             return_filename=True,
         )
+        
+        unlabeled_set = UnlabeledSet(
+            config["data"]["unlabeled_folder"],
+            encoder,
+            pad_to=config["data"]["audio_max_len"],
+        )
 
         if real_data:
             synth_set = torch.utils.data.ConcatDataset([real_set, synth_set])
 
-        tot_train_data = [synth_set, weak_set]
+        tot_train_data = [synth_set, weak_set, unlabeled_set]
         train_dataset = torch.utils.data.ConcatDataset(tot_train_data)
 
         batch_sizes = config["training"]["batch_size"]

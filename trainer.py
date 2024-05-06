@@ -277,7 +277,7 @@ class SED(pl.LightningModule):
            torch.Tensor, the loss to take into account.
         """
 
-        indx_strong, indx_weak = self.hparams["training"]["batch_size"]
+        indx_strong, indx_weak, _ = self.hparams["training"]["batch_size"]
 
         audio, labels, _ = batch
         features = self.mel_spec(audio)
@@ -302,11 +302,11 @@ class SED(pl.LightningModule):
             
         features = self.take_log(features)
 
-        if 0.3 > random.random():
+        if 0.1 > random.random():
             features[weak_mask] = filt_aug_prototype(features[weak_mask])
             features[strong_mask] = filt_aug_prototype(features[strong_mask])
 
-        if 0.3 > random.random():
+        if 0.1 > random.random():
             features[weak_mask] = freq_mask(features[weak_mask])
             features[strong_mask] = freq_mask(features[strong_mask])
 

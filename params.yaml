@@ -1,6 +1,6 @@
 training:
   #batch size: [strong, weak, unlabel]
-  batch_size: [32, 32]
+  batch_size: [24, 24, 32]
   batch_size_val: 64
   n_epochs_warmup: 50 # num epochs used for exponential warmup
   num_workers: 8 # change according to your cpu
