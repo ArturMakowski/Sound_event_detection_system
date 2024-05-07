@@ -1,7 +1,7 @@
 import base64
 
 import streamlit as st
-from app_utils import inference, plot_scores
+from app_utils import inference
 
 
 def main() -> None:
@@ -28,8 +28,6 @@ def main() -> None:
     )
 
     st.audio(audio, format="audio/wav", start_time=0, sample_rate=fs)
-    
-    st.pyplot(plot_scores(idx))
 
 
 if __name__ == "__main__":
