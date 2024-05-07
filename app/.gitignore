@@ -1,2 +1,4 @@
 vis_images/
 *.tsv
+flagged/
+event_plot.png

@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import sed_vis
+import sed_vis.visualization
 import torch
 import yaml
 
@@ -224,3 +225,75 @@ def plot_scores(idx: int) -> plt.Axes:
         axes[path_id].set_ylabel("Probability")
         axes[path_id].set_xlabel("Frame")
     return fig
+
+
+def make_prediction_on_audio(
+    sed: SED,
+    audio: torch.Tensor,
+    config: dict,
+    encoder: ManyHotEncoder,
+    filename: str,
+    print_df: bool = False,
+    model: str = "student",
+) -> Tuple[
+    sed_vis.visualization.EventListVisualizer, dcase_util.containers.AudioContainer
+]:
+    """
+    Makes a prediction on a provided audio tensor.
+
+    Parameters:
+        sed (SED): The SED model to use for prediction.
+        audio (torch.Tensor): The audio data as a tensor.
+        config (dict): The configuration parameters.
+        encoder (ManyHotEncoder): The encoder for the dataset.
+        filename (str): The filename associated with the audio tensor.
+        print_df (bool, optional): Whether to print the dataframes. Defaults to False.
+
+    Returns:
+        tuple: The visualizer for the event list and the audio container.
+    """
+    preds = batched_decode_preds(
+        sed.forward(audio, model=model),
+        filename,
+        encoder,
+    )
+    preds[2][0.5][["onset", "offset", "event_label"]].to_csv(
+        "preds.tsv", index=False, sep="\t"
+    )
+
+    if print_df:
+        print("--------Preds--------")
+        print(preds[2][0.5][["onset", "offset", "event_label"]])
+
+    ref_df = pd.read_csv(config["data"]["test_tsv"], sep="\t")
+    ref_df = (
+        ref_df[ref_df["filename"] == filename].reset_index().drop(columns=["index"])
+    )
+    ref_df.drop("filename", axis=1).to_csv("ref.tsv", index=False, sep="\t")
+
+    if print_df:
+        print("--------Ref--------")
+        print(ref_df)
+
+    # Create an AudioContainer from the audio tensor
+    audio_container = dcase_util.containers.AudioContainer(
+        data=audio.numpy(),
+        fs=config["data"]["fs"],
+    )
+
+    # Load event lists
+    reference_event_list = dcase_util.containers.MetaDataContainer().load("ref.tsv")
+    estimated_event_list = dcase_util.containers.MetaDataContainer().load("preds.tsv")
+
+    event_lists = {
+        "reference": reference_event_list,
+        "estimated": estimated_event_list,
+    }
+
+    vis = sed_vis.visualization.EventListVisualizer(
+        event_lists=event_lists,
+        audio_signal=audio_container.data,
+        sampling_rate=audio_container.fs,
+        publication_mode=True,
+    )
+    return vis, audio_container
