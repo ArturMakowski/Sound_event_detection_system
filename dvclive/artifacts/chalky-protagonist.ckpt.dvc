@@ -1,0 +1,5 @@
+outs:
+- md5: e2aebe7296bb2c9622944bf4eccd53ca
+  size: 17307585
+  hash: md5
+  path: chalky-protagonist.ckpt

@@ -2,11 +2,12 @@ training:
   batch_size:
   - 24
   - 24
+  - 32
   batch_size_val: 64
   n_epochs_warmup: 50
   num_workers: 8
-  n_epochs: 200
-  early_stop_patience: 200
+  n_epochs: 150
+  early_stop_patience: 150
   accumulate_batches: 1
   gradient_clip: 0.0
   median_window: 7
@@ -122,4 +123,4 @@ net:
   dropout_recurrent: 0
   attention: true
 log_dir: ./exp/
-model_name: critical-bond
+model_name: chalky-protagonist
