@@ -235,6 +235,7 @@ def make_prediction_on_audio(
     filename: str,
     print_df: bool = False,
     model: str = "student",
+    median_filter: int = 7
 ) -> Tuple[
     sed_vis.visualization.EventListVisualizer, dcase_util.containers.AudioContainer
 ]:
@@ -256,6 +257,7 @@ def make_prediction_on_audio(
         sed.forward(audio, model=model),
         filename,
         encoder,
+        median_filter=median_filter
     )
     preds[2][0.5][["onset", "offset", "event_label"]].to_csv(
         "preds.tsv", index=False, sep="\t"
